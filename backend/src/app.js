@@ -9,6 +9,7 @@ require('dotenv').config();
 // Import routes
 const authRoutes = require('./routes/auth');
 const dogRoutes = require('./routes/dogs');
+const userRoutes = require('./routes/users');
 
 // Import middleware
 const { errorHandler, notFound } = require('./middleware/errorHandler');
@@ -56,6 +57,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/dogs', dogRoutes);
+app.use('/api/users', userRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

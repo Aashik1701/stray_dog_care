@@ -9,23 +9,50 @@ import {
   CogIcon,
   HeartIcon,
   ChevronLeftIcon,
-  ChevronRightIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
-
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: HomeIcon },
-  { name: 'Dogs', href: '/dogs', icon: HeartIcon },
-  { name: 'Map View', href: '/map', icon: MapIcon },
-  { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
-  { name: 'Users', href: '/users', icon: UsersIcon },
-  { name: 'Settings', href: '/settings', icon: CogIcon },
-];
+import { useAuth } from '../../hooks/useAuth';
 
 export default function Sidebar({ isCollapsed, setIsCollapsed }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const { user, logout, hasPermission } = useAuth();
+
+  // Get role-based navigation items
+  const getNavigationItems = () => {
+    const baseItems = [
+      { name: 'Dashboard', href: '/', icon: HomeIcon },
+      { name: 'Dogs', href: '/dogs', icon: HeartIcon },
+      { name: 'Map View', href: '/map', icon: MapIcon }
+    ];
+
+    // Add Analytics for users with permission
+    if (hasPermission('view_analytics')) {
+      baseItems.push({ name: 'Analytics', href: '/analytics', icon: ChartBarIcon });
+    }
+
+    // Add Users for users with permission
+    if (hasPermission('manage_users')) {
+      baseItems.push({ name: 'Users', href: '/users', icon: UsersIcon });
+    }
+
+    // Add Settings for all users
+    baseItems.push({ name: 'Settings', href: '/settings', icon: CogIcon });
+
+    return baseItems;
+  };
+
+  const navigation = getNavigationItems();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
 
   const toggleSidebar = () => {
     setIsCollapsed(!isCollapsed);
@@ -218,7 +245,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           transition={{ delay: 0.5, duration: 0.3 }}
         >
           <motion.div 
-            className={`flex items-center transition-all duration-200 hover:bg-white rounded-xl p-2 cursor-pointer ${
+            className={`flex items-center transition-all duration-200 hover:bg-white rounded-xl p-2 ${
               isCollapsed ? 'justify-center' : ''
             }`}
             whileHover={{ scale: 1.02 }}
@@ -230,23 +257,40 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                 scale: 1.05 
               }}
             >
-              <span className="text-white text-sm font-bold font-heading">TU</span>
+              <span className="text-white text-sm font-bold font-heading">
+                {user ? `${user.profile.firstName[0]}${user.profile.lastName[0]}` : 'TU'}
+              </span>
             </motion.div>
             <AnimatePresence mode="wait">
               {!isCollapsed && (
                 <motion.div 
-                  className="ml-3"
+                  className="ml-3 flex-1"
                   variants={contentVariants}
                   initial="collapsed"
                   animate="expanded"
                   exit="collapsed"
                   transition={{ duration: 0.2 }}
                 >
-                  <p className="text-sm font-medium font-heading text-gray-900">Test User</p>
-                  <p className="text-xs text-gray-500 font-body">Field Worker</p>
+                  <p className="text-sm font-medium font-heading text-gray-900">
+                    {user ? `${user.profile.firstName} ${user.profile.lastName}` : 'Test User'}
+                  </p>
+                  <p className="text-xs text-gray-500 font-body">
+                    {user ? user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Field Worker'}
+                  </p>
                 </motion.div>
               )}
             </AnimatePresence>
+            {!isCollapsed && (
+              <motion.button
+                onClick={handleLogout}
+                className="ml-2 p-1 rounded-lg hover:bg-gray-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                title="Logout"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ArrowRightOnRectangleIcon className="h-5 w-5 text-gray-500 hover:text-red-600" />
+              </motion.button>
+            )}
           </motion.div>
         </motion.div>
       </motion.div>
