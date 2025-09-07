@@ -1,29 +1,33 @@
 const express = require('express');
-const Dog = require('../models/Dog');
+const {
+  getAllDogs,
+  getDogById,
+  createDog,
+  updateDog,
+  updateDogStatus,
+  getDogsByLocation,
+  deleteDog,
+  getDogsStatistics
+} = require('../controllers/dogController');
+const { auth, authorize, sameOrganization, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Create dog (MVP: name + location)
-router.post('/', async (req, res) => {
-  try {
-    const { name, location } = req.body;
-    const dog = await Dog.create({ name, location });
-    res.status(201).json(dog);
-  } catch (err) {
-    console.error(err);
-    res.status(400).json({ error: 'Failed to create dog' });
-  }
-});
+// Public routes (with optional auth for organization filtering)
+router.get('/', optionalAuth, getAllDogs);
+router.get('/location', getDogsByLocation);
+router.get('/stats', getDogsStatistics);
+router.get('/:id', getDogById);
 
-// List dogs
-router.get('/', async (_req, res) => {
-  try {
-    const dogs = await Dog.find().sort({ createdAt: -1 }).limit(50);
-    res.json(dogs);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch dogs' });
-  }
-});
+// Protected routes (require authentication)
+router.use(auth); // Apply auth middleware to all routes below
+router.use(sameOrganization); // Apply organization filtering
+
+router.post('/', createDog);
+router.put('/:id', updateDog);
+router.patch('/:id/status', updateDogStatus);
+
+// Admin only routes
+router.delete('/:id', authorize('system_admin', 'municipal_admin'), deleteDog);
 
 module.exports = router;
