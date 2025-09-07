@@ -1,21 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import StatsCard from '../components/dashboard/StatsCard';
-import DogsTable from '../components/tables/DogsTable';
+import { motion } from 'framer-motion';
+import MetricCard from '../components/ui/MetricCard';
+import RecentRegistrations from '../components/dashboard/RecentRegistrations';
+import QuickActions from '../components/dashboard/QuickActions';
+import { LoadingCard } from '../components/ui/Loading';
 import apiService from '../services/api';
 import { 
   UsersIcon, 
   HeartIcon, 
-  MapPinIcon, 
+  ShieldCheckIcon, 
   ExclamationTriangleIcon 
 } from '@heroicons/react/24/outline';
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(null);
-  const [dogs, setDogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    total: 12,
+    sterilized: 8,
+    vaccinated: 10,
+    injured: 2,
+    sick: 1
+  });
+  const [dogs, setDogs] = useState([
+    {
+      _id: '1',
+      name: 'Buddy',
+      breed: 'Golden Retriever',
+      healthStatus: 'healthy',
+      isVaccinated: true,
+      isSterilized: true,
+      location: 'Central Park',
+      createdAt: new Date().toISOString(),
+      photos: []
+    },
+    {
+      _id: '2',
+      name: 'Luna',
+      breed: 'Street Dog',
+      healthStatus: 'injured',
+      isVaccinated: false,
+      isSterilized: false,
+      location: 'Downtown',
+      createdAt: new Date(Date.now() - 86400000).toISOString(),
+      photos: []
+    }
+  ]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  console.log('Dashboard component rendering...', { stats, dogs, loading, error });
+
   useEffect(() => {
+    console.log('Dashboard useEffect running...');
     fetchDashboardData();
   }, []);
 
@@ -30,16 +65,34 @@ export default function Dashboard() {
         apiService.getDogsStatistics()
       ]);
 
+      console.log('Dogs response:', dogsResponse);
+      console.log('Stats response:', statsResponse);
+
       if (dogsResponse.success) {
-        setDogs(dogsResponse.data.dogs);
+        setDogs(dogsResponse.data.dogs || []);
+      } else {
+        console.warn('Dogs API returned no success flag');
       }
 
       if (statsResponse.success) {
         setStats(statsResponse.data);
+      } else {
+        console.warn('Stats API returned no success flag');
+        // Set some default stats if API fails
+        setStats({
+          total: 0,
+          sterilized: 0,
+          vaccinated: 0,
+          injured: 0,
+          sick: 0
+        });
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setError(error.message);
+      
+      // Keep mock data for development if API fails
+      console.log('Using mock data due to API error');
     } finally {
       setLoading(false);
     }
@@ -50,44 +103,81 @@ export default function Dashboard() {
     // Navigate to dog details page when implemented
   };
 
+  const handleActionClick = (action) => {
+    console.log('Action clicked:', action);
+    // Handle quick action clicks
+  };
+
+  const handleMetricClick = (metricType) => {
+    console.log('Metric clicked:', metricType);
+    // Navigate to filtered view
+  };
+
+  const pageVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1,
+        delayChildren: 0.2
+      }
+    }
+  };
+
+  const sectionVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.4 }
+    }
+  };
+
   if (loading) {
     return (
-      <div className="space-y-6">
+      <motion.div 
+        className="space-y-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Loading dashboard data...</p>
+          <h1 className="text-3xl font-bold font-heading text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 font-body mt-2">Loading dashboard data...</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-white rounded-lg shadow p-6 animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-            </div>
+            <LoadingCard key={i} />
           ))}
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-6">
+      <motion.div 
+        className="space-y-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-4">
+          <h1 className="text-3xl font-bold font-heading text-gray-900">Dashboard</h1>
+          <div className="mt-4 card p-6 border-l-4 border-danger-500 bg-danger-50">
             <div className="flex">
-              <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
+              <ExclamationTriangleIcon className="h-6 w-6 text-danger-500 flex-shrink-0" aria-hidden="true" />
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-red-800">
+                <h3 className="text-lg font-semibold font-heading text-danger-800">
                   Error loading dashboard
                 </h3>
-                <div className="mt-2 text-sm text-red-700">
+                <div className="mt-2 text-sm text-danger-700 font-body">
                   {error}
                 </div>
                 <div className="mt-4">
                   <button
                     onClick={fetchDashboardData}
-                    className="bg-red-100 px-4 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200"
+                    className="btn-primary bg-danger-600 hover:bg-danger-700 focus:ring-danger-500"
                   >
                     Try again
                   </button>
@@ -96,83 +186,150 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <motion.div 
+      className="space-y-6 lg:space-y-8"
+      variants={pageVariants}
+      initial="hidden"
+      animate="visible"
+    >
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600">Overview of stray dog management activities</p>
-      </div>
+      <motion.div variants={sectionVariants}>
+        <h1 className="text-3xl lg:text-4xl font-bold font-heading text-gray-900">
+          Dashboard
+        </h1>
+        <p className="text-gray-600 font-body mt-2 text-lg">
+          Overview of stray dog management activities
+        </p>
+      </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard
+      <motion.div 
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6"
+        variants={sectionVariants}
+      >
+        <MetricCard
           title="Total Dogs"
           value={stats?.total || 0}
           icon={UsersIcon}
           color="blue"
           change={dogs.length > 0 ? `${dogs.length} registered recently` : 'No recent registrations'}
+          changeType="neutral"
+          onClick={() => handleMetricClick('total')}
         />
-        <StatsCard
+        <MetricCard
           title="Sterilized"
           value={stats?.sterilized || 0}
-          icon={HeartIcon}
+          icon={ShieldCheckIcon}
           color="green"
           change={stats?.total ? `${Math.round((stats.sterilized / stats.total) * 100)}% completion rate` : 'No data'}
+          changeType={stats?.sterilized > 0 ? "positive" : "neutral"}
+          onClick={() => handleMetricClick('sterilized')}
         />
-        <StatsCard
+        <MetricCard
           title="Vaccinated"
           value={stats?.vaccinated || 0}
-          icon={MapPinIcon}
+          icon={HeartIcon}
           color="yellow"
           change={stats?.total ? `${Math.round((stats.vaccinated / stats.total) * 100)}% vaccination rate` : 'No data'}
+          changeType={stats?.vaccinated > 0 ? "positive" : "neutral"}
+          onClick={() => handleMetricClick('vaccinated')}
         />
-        <StatsCard
+        <MetricCard
           title="Need Attention"
           value={stats?.injured || 0}
           icon={ExclamationTriangleIcon}
           color="red"
           change={stats?.injured > 0 ? 'Immediate care required' : 'All dogs healthy'}
+          changeType={stats?.injured > 0 ? "negative" : "positive"}
+          onClick={() => handleMetricClick('injured')}
         />
-      </div>
+      </motion.div>
 
-      {/* Recent Activity */}
-      <div className="grid grid-cols-1 gap-6">
-        <div>
-          <div className="mb-4">
-            <h2 className="text-lg font-medium text-gray-900">Recent Registrations</h2>
-            <p className="text-sm text-gray-500">Latest dogs added to the system</p>
-          </div>
-          <DogsTable 
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
+        {/* Recent Activity - Takes 2 columns on xl screens */}
+        <motion.div 
+          className="xl:col-span-2"
+          variants={sectionVariants}
+        >
+          <RecentRegistrations 
             dogs={dogs} 
-            onRowClick={handleDogClick}
+            onDogClick={handleDogClick}
             loading={loading}
           />
-        </div>
+        </motion.div>
+
+        {/* Quick Actions - Takes 1 column on xl screens */}
+        <motion.div variants={sectionVariants}>
+          <QuickActions onActionClick={handleActionClick} />
+        </motion.div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center justify-center px-4 py-3 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-            <HeartIcon className="h-5 w-5 mr-2" />
-            Register New Dog
-          </button>
-          <button className="flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-            <MapPinIcon className="h-5 w-5 mr-2" />
-            View Map
-          </button>
-          <button className="flex items-center justify-center px-4 py-3 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-            <UsersIcon className="h-5 w-5 mr-2" />
-            Generate Report
-          </button>
+      {/* Additional Insights */}
+      <motion.div 
+        className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8"
+        variants={sectionVariants}
+      >
+        {/* Health Status Overview */}
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold font-heading text-gray-900 mb-4">
+            Health Status Distribution
+          </h3>
+          <div className="space-y-3">
+            {[
+              { status: 'Healthy', count: (stats?.total || 0) - (stats?.injured || 0) - (stats?.sick || 0), color: 'success' },
+              { status: 'Injured', count: stats?.injured || 0, color: 'danger' },
+              { status: 'Sick', count: stats?.sick || 0, color: 'warning' }
+            ].map((item) => (
+              <div key={item.status} className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    item.color === 'success' ? 'bg-success-500' :
+                    item.color === 'danger' ? 'bg-danger-500' :
+                    'bg-warning-500'
+                  }`}></div>
+                  <span className="text-sm font-medium font-body text-gray-700">{item.status}</span>
+                </div>
+                <span className="text-sm font-semibold font-heading text-gray-900">
+                  {item.count}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    </div>
+
+        {/* Recent Activity Summary */}
+        <div className="card p-6">
+          <h3 className="text-lg font-semibold font-heading text-gray-900 mb-4">
+            Today's Activity
+          </h3>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium font-body text-gray-700">New Registrations</span>
+              <span className="text-sm font-semibold font-heading text-gray-900">
+                {dogs.filter(dog => {
+                  const today = new Date();
+                  const dogDate = new Date(dog.createdAt);
+                  return dogDate.toDateString() === today.toDateString();
+                }).length}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium font-body text-gray-700">Vaccinations</span>
+              <span className="text-sm font-semibold font-heading text-gray-900">0</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium font-body text-gray-700">Sterilizations</span>
+              <span className="text-sm font-semibold font-heading text-gray-900">0</span>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
