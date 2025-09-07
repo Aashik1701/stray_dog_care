@@ -18,8 +18,26 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
+
+// CORS: allow configured frontend and common local dev origins (Expo web)
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173', // Vite web dashboard
+  'http://localhost:19006', // Expo web default
+  'http://localhost:8081' // Alternative Expo web
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    // Allow non-browser requests (no Origin header)
+    if (!origin) return callback(null, true);
+    // Allow any localhost origin in development
+    if (process.env.NODE_ENV !== 'production' && /localhost:\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 

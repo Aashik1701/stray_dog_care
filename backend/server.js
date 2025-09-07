@@ -12,7 +12,11 @@ const server = http.createServer(app);
 // Socket.io setup
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+      'http://localhost:19006', // Expo web
+      'http://localhost:8081', 'http://localhost:8082'   // Expo web alternative
+    ],
     methods: ['GET', 'POST']
   }
 });
