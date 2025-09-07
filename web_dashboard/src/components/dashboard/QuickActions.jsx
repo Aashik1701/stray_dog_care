@@ -94,6 +94,8 @@ const colorVariants = {
 };
 
 export default function QuickActions({ onActionClick }) {
+  // Silence linter for JSX usage of motion
+  void motion;
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -129,7 +131,7 @@ export default function QuickActions({ onActionClick }) {
 
   return (
     <motion.div 
-      className="card p-6"
+  className="card p-5 lg:p-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.4 }}
@@ -140,7 +142,7 @@ export default function QuickActions({ onActionClick }) {
       </div>
 
       <motion.div 
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -152,7 +154,7 @@ export default function QuickActions({ onActionClick }) {
             <motion.button
               key={action.name}
               variants={itemVariants}
-              className={`group relative p-4 border-2 rounded-xl text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${colors.bg} ${colors.border}`}
+              className={`group relative p-3 sm:p-4 border rounded-xl text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 overflow-hidden ${colors.bg} ${colors.border}`}
               onClick={() => handleActionClick(action)}
               whileHover={{ 
                 y: -2,
@@ -166,14 +168,14 @@ export default function QuickActions({ onActionClick }) {
                   className={`flex-shrink-0 p-2 rounded-lg ${colors.bg} ${colors.text} group-hover:scale-110 transition-transform duration-200`}
                   whileHover={{ rotate: 5 }}
                 >
-                  <action.icon className="h-6 w-6" aria-hidden="true" />
+                  <action.icon className="h-5 w-5" aria-hidden="true" />
                 </motion.div>
                 
                 <div className="flex-1 min-w-0">
-                  <h3 className={`text-sm font-semibold font-heading ${colors.text} group-hover:text-opacity-80 transition-colors duration-200`}>
+                  <h3 title={action.name} className={`text-sm font-semibold font-heading truncate ${colors.text} group-hover:text-opacity-80 transition-colors duration-200`}> 
                     {action.name}
                   </h3>
-                  <p className="text-xs text-gray-600 font-body mt-1 leading-relaxed">
+                  <p className="hidden lg:block text-xs text-gray-600 font-body mt-1 leading-relaxed truncate">
                     {action.description}
                   </p>
                 </div>
@@ -195,7 +197,7 @@ export default function QuickActions({ onActionClick }) {
 
       {/* Additional actions hint */}
       <motion.div 
-        className="mt-6 text-center"
+        className="mt-5 lg:mt-6 text-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}

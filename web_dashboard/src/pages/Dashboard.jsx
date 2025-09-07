@@ -13,6 +13,8 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function Dashboard() {
+  // Silence linter for JSX usage of motion
+  void motion;
   const [stats, setStats] = useState({
     total: 12,
     sterilized: 8,
@@ -192,17 +194,17 @@ export default function Dashboard() {
 
   return (
     <motion.div 
-      className="space-y-6 lg:space-y-8"
+      className="space-y-4 sm:space-y-6 lg:space-y-8"
       variants={pageVariants}
       initial="hidden"
       animate="visible"
     >
       {/* Header */}
       <motion.div variants={sectionVariants}>
-        <h1 className="text-3xl lg:text-4xl font-bold font-heading text-gray-900">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold font-heading text-gray-900">
           Dashboard
         </h1>
-        <p className="text-gray-600 font-body mt-2 text-lg">
+        <p className="text-gray-600 font-body mt-1 md:mt-2 text-sm md:text-base lg:text-lg">
           Overview of stray dog management activities
         </p>
       </motion.div>
