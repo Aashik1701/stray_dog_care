@@ -1,0 +1,7 @@
+node_modules/
+.expo/
+.expo-shared/
+web-build/
+npm-debug.log
+.env
+.DS_Store
