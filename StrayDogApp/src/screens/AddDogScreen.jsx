@@ -66,6 +66,25 @@ export default function AddDogScreen({ navigation }) {
 
     setSubmitting(true);
     try {
+      // 1) Upload images if any
+      let uploadedImages = [];
+      if (images.length > 0) {
+        const form = new FormData();
+        images.forEach((uri, idx) => {
+          // Infer file name and type
+          const name = uri.split('/').pop() || `photo_${idx}.jpg`;
+          const ext = name.split('.').pop()?.toLowerCase();
+          const type = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+          form.append('images', { uri, name, type });
+        });
+
+        const uploadRes = await api.post('/uploads/images', form, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        uploadedImages = uploadRes.data.data || [];
+      }
+
+      // 2) Create dog with uploaded image metadata
       const payload = {
         size: dogData.size,
         color: dogData.color || undefined,
@@ -73,7 +92,7 @@ export default function AddDogScreen({ navigation }) {
         notes: dogData.notes || undefined,
         zone: dogData.zone,
         coordinates: [coords.longitude, coords.latitude],
-        images: images.map(uri => ({ url: uri, type: 'local' })) // For now, store local URIs
+        images: uploadedImages,
       };
       const res = await api.post('/dogs', payload);
       Alert.alert('Success', 'Dog registered successfully');
