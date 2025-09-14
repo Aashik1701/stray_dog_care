@@ -131,7 +131,7 @@ const createDog = asyncHandler(async (req, res) => {
       zone,
       healthStatus,
       behavior,
-      images,
+  images,
       notes
     } = req.body;
 
@@ -158,7 +158,8 @@ const createDog = asyncHandler(async (req, res) => {
       zone,
       healthStatus,
       behavior,
-      images: images || [],
+  // Expect images array of { url, publicId, type }
+  images: images || [],
       notes,
       reportedBy: req.user._id,
       organization: req.user.organization
