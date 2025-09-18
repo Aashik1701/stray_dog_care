@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api, { setAuthToken } from '../services/api';
+import { isExpired, decodeJwt } from '../utils/jwt';
 
 const AuthContext = createContext(null);
 
@@ -15,18 +16,39 @@ export function AuthProvider({ children }) {
         const stored = await AsyncStorage.getItem('auth');
         if (stored) {
           const parsed = JSON.parse(stored);
-          setToken(parsed.token);
-          setAuthToken(parsed.token);
-          setUser(parsed.user);
+          // Validate token expiry
+          if (parsed?.token && !isExpired(parsed.token)) {
+            setToken(parsed.token);
+            setAuthToken(parsed.token);
+            setUser(parsed.user);
+          } else if (parsed?.token) {
+            // Expired -> clear
+            await AsyncStorage.removeItem('auth');
+          }
         }
       } catch {}
       setLoading(false);
     })();
   }, []);
 
+  // Setup timer to auto-logout near expiry
+  useEffect(() => {
+    if (!token) return;
+    const decoded = decodeJwt(token);
+    if (!decoded?.exp) return;
+    const now = Date.now();
+    const logoutAt = decoded.exp * 1000 - 15000; // 15s before expiry
+    const delay = Math.max(logoutAt - now, 0);
+    const timer = setTimeout(() => {
+      logout();
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [token]);
+
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
     const { token: t, user: u } = res.data.data;
+    if (isExpired(t)) throw new Error('Received expired token');
     setToken(t);
     setUser(u);
     setAuthToken(t);

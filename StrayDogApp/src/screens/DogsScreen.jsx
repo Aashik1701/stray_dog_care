@@ -1,61 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
-  TextInput, 
-  Image, 
-  RefreshControl,
-  Alert 
-} from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import api from '../services/api';
+import { useDogs } from '../hooks/useDogs';
+import Loading from '../ui/Loading';
+import ErrorMessage from '../ui/ErrorMessage';
+import EmptyState from '../ui/EmptyState';
 
 export default function DogsScreen({ navigation }) {
-  const [dogs, setDogs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const { dogs, loading, error, refresh } = useDogs();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredDogs, setFilteredDogs] = useState([]);
 
-  useEffect(() => {
-    fetchDogs();
-  }, []);
-
-  useEffect(() => {
-    // Filter dogs based on search query
-    if (searchQuery.trim() === '') {
-      setFilteredDogs(dogs);
-    } else {
-      const filtered = dogs.filter(dog => 
-        dog.dogId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        dog.color?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        dog.size?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        dog.zone?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredDogs(filtered);
-    }
+  const filteredDogs = useMemo(() => {
+    if (!searchQuery.trim()) return dogs;
+    return dogs.filter(dog => 
+      dog.dogId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      dog.color?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      dog.size?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      dog.zone?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   }, [dogs, searchQuery]);
-
-  const fetchDogs = async () => {
-    try {
-      const response = await api.get('/dogs');
-      setDogs(response.data.data.dogs || []);
-    } catch (error) {
-      console.log('Error fetching dogs:', error);
-      Alert.alert('Error', 'Failed to load dogs');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchDogs();
-    setRefreshing(false);
-  };
 
   const getStatusColor = (dog) => {
     if (dog.healthStatus?.isInjured) return '#ef4444';
@@ -114,13 +77,7 @@ export default function DogsScreen({ navigation }) {
     </TouchableOpacity>
   );
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <Text>Loading dogs...</Text>
-      </View>
-    );
-  }
+  if (loading && dogs.length === 0) return <Loading />;
 
   return (
     <View style={styles.container}>
@@ -148,29 +105,20 @@ export default function DogsScreen({ navigation }) {
       </View>
 
       {/* Dogs List */}
+      <ErrorMessage message={error} onRetry={refresh} />
       <FlatList
         data={filteredDogs}
         keyExtractor={(item) => item._id}
         renderItem={renderDogItem}
         contentContainerStyle={styles.listContainer}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={loading} onRefresh={refresh} />
         }
         ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons name="paw" size={48} color="#6b7280" />
-            <Text style={styles.emptyText}>
-              {searchQuery ? 'No dogs found for your search' : 'No dogs registered yet'}
-            </Text>
-            {!searchQuery && (
-              <TouchableOpacity 
-                style={styles.addButton}
-                onPress={() => navigation.navigate('AddDog')}
-              >
-                <Text style={styles.addButtonText}>Register First Dog</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <EmptyState 
+            title={searchQuery ? 'No dogs found' : 'No dogs yet'}
+            subtitle={searchQuery ? 'Try a different search term' : 'Register the first dog to get started'}
+          />
         }
       />
     </View>

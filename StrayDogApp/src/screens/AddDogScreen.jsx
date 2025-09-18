@@ -9,7 +9,9 @@ export default function AddDogScreen({ navigation }) {
   const [dogData, setDogData] = useState({ size: '', color: '', gender: '', notes: '', zone: '' });
   const [coords, setCoords] = useState(null); // { latitude, longitude }
   const [submitting, setSubmitting] = useState(false);
-  const [images, setImages] = useState([]);
+  const [images, setImages] = useState([]); // array of local URIs
+  const [uploadProgress, setUploadProgress] = useState({}); // index -> 0-100
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -69,19 +71,40 @@ export default function AddDogScreen({ navigation }) {
       // 1) Upload images if any
       let uploadedImages = [];
       if (images.length > 0) {
+        setUploading(true);
+        setUploadProgress({});
+        // Upload in a single batch but still track progress overall using axios onUploadProgress
         const form = new FormData();
         images.forEach((uri, idx) => {
-          // Infer file name and type
           const name = uri.split('/').pop() || `photo_${idx}.jpg`;
-          const ext = name.split('.').pop()?.toLowerCase();
-          const type = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-          form.append('images', { uri, name, type });
+            const ext = name.split('.').pop()?.toLowerCase();
+            const type = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+            form.append('images', { uri, name, type });
+            // initialize progress
+            setUploadProgress(p => ({ ...p, [idx]: 0 }));
         });
 
-        const uploadRes = await api.post('/uploads/images', form, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        uploadedImages = uploadRes.data.data || [];
+        try {
+          const uploadRes = await api.post('/uploads/images', form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (e) => {
+              if (!e.total) return;
+              const percent = Math.round((e.loaded / e.total) * 100);
+              // apply same percent to all images (single multipart request)
+              setUploadProgress(p => {
+                const updated = { ...p };
+                images.forEach((_, idx) => { updated[idx] = percent; });
+                return updated;
+              });
+            }
+          });
+          uploadedImages = uploadRes.data.data || [];
+        } catch (err) {
+          Alert.alert('Upload Failed', 'Could not upload images. You can retry or continue without images.');
+          return; // abort submit if upload fails
+        } finally {
+          setUploading(false);
+        }
       }
 
       // 2) Create dog with uploaded image metadata
@@ -118,6 +141,11 @@ export default function AddDogScreen({ navigation }) {
             renderItem={({ item, index }) => (
               <View style={styles.imageWrapper}>
                 <Image source={{ uri: item }} style={styles.photo} />
+                {uploading && (
+                  <View style={styles.progressOverlay}>
+                    <Text style={styles.progressText}>{uploadProgress[index] || 0}%</Text>
+                  </View>
+                )}
                 <TouchableOpacity 
                   style={styles.removeButton} 
                   onPress={() => removeImage(index)}
@@ -162,8 +190,8 @@ export default function AddDogScreen({ navigation }) {
         <TextInput placeholder="Notes" style={[styles.input, { height: 100 }]} value={dogData.notes} onChangeText={(t)=>setDogData(s=>({ ...s, notes: t }))} multiline />
       </View>
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting}>
-        <Text style={styles.submitText}>{submitting ? 'Saving…' : 'Save'}</Text>
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting || uploading}>
+        <Text style={styles.submitText}>{submitting ? 'Saving…' : uploading ? 'Uploading…' : 'Save'}</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -176,6 +204,8 @@ const styles = StyleSheet.create({
   photoContainer: { marginTop: 8 },
   imageWrapper: { position: 'relative', marginRight: 8 },
   photo: { width: 80, height: 80, borderRadius: 8 },
+  progressOverlay: { position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
+  progressText: { color: '#fff', fontWeight: '600', fontSize: 12 },
   removeButton: { position: 'absolute', top: -8, right: -8 },
   photoActions: { flexDirection: 'column', gap: 8, marginLeft: 8 },
   photoButton: { 
