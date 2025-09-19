@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import DogsTable from '../components/tables/DogsTable';
 import apiService from '../services/api';
 import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
@@ -21,11 +21,7 @@ export default function DogsPage() {
     totalDogs: 0
   });
 
-  useEffect(() => {
-    fetchDogs();
-  }, [filters]);
-
-  const fetchDogs = async (page = 1) => {
+  const fetchDogs = useCallback(async (page = 1) => {
     try {
       setLoading(true);
       setError(null);
@@ -50,7 +46,13 @@ export default function DogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
+
+  useEffect(() => {
+    fetchDogs();
+  }, [fetchDogs]);
+
+  // fetchDogs is memoized; keep reference for pagination buttons
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
@@ -103,7 +105,7 @@ export default function DogsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {/* Search */}
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="filter-search" className="block text-sm font-medium text-gray-700 mb-1">
               Search
             </label>
             <div className="relative">
@@ -111,6 +113,8 @@ export default function DogsPage() {
                 <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
               </div>
               <input
+                id="filter-search"
+                name="search"
                 type="text"
                 placeholder="Search by ID, name, or location..."
                 value={filters.search}
@@ -122,10 +126,12 @@ export default function DogsPage() {
 
           {/* Status */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="filter-status" className="block text-sm font-medium text-gray-700 mb-1">
               Status
             </label>
             <select
+              id="filter-status"
+              name="status"
               value={filters.status}
               onChange={(e) => handleFilterChange('status', e.target.value)}
               className="block w-full py-2 px-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
@@ -140,10 +146,12 @@ export default function DogsPage() {
 
           {/* Size */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="filter-size" className="block text-sm font-medium text-gray-700 mb-1">
               Size
             </label>
             <select
+              id="filter-size"
+              name="size"
               value={filters.size}
               onChange={(e) => handleFilterChange('size', e.target.value)}
               className="block w-full py-2 px-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
@@ -157,10 +165,12 @@ export default function DogsPage() {
 
           {/* Vaccinated */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="filter-vaccinated" className="block text-sm font-medium text-gray-700 mb-1">
               Vaccinated
             </label>
             <select
+              id="filter-vaccinated"
+              name="isVaccinated"
               value={filters.isVaccinated}
               onChange={(e) => handleFilterChange('isVaccinated', e.target.value)}
               className="block w-full py-2 px-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
@@ -173,10 +183,12 @@ export default function DogsPage() {
 
           {/* Sterilized */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="filter-sterilized" className="block text-sm font-medium text-gray-700 mb-1">
               Sterilized
             </label>
             <select
+              id="filter-sterilized"
+              name="isSterilized"
               value={filters.isSterilized}
               onChange={(e) => handleFilterChange('isSterilized', e.target.value)}
               className="block w-full py-2 px-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"

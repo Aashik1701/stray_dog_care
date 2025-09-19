@@ -29,7 +29,8 @@ const authReducer = (state, action) => {
     case AUTH_ACTIONS.LOGIN_START:
       return {
         ...state,
-        loading: true,
+        // Avoid global loading overlay during login to prevent route flicker
+        loading: false,
         error: null
       };
 

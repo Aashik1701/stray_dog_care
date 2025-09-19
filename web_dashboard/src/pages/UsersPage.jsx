@@ -113,7 +113,10 @@ const UsersPage = () => {
       {/* Filters */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
+          <label htmlFor="user-search" className="sr-only">Search users</label>
           <input
+            id="user-search"
+            name="userSearch"
             type="text"
             placeholder="Search users by name, username, or email..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
@@ -122,7 +125,10 @@ const UsersPage = () => {
           />
         </div>
         <div>
+          <label htmlFor="role-filter" className="sr-only">Filter by role</label>
           <select
+            id="role-filter"
+            name="role"
             className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
