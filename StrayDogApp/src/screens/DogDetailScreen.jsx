@@ -9,6 +9,7 @@ import {
   Alert,
   Dimensions 
 } from 'react-native';
+import { shadow } from '../ui/shadow';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 
@@ -306,11 +307,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     padding: 16,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadow(2),
   },
   dogId: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 8 },
   basicInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

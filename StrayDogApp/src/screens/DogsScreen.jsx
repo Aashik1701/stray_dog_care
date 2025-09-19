@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Image, RefreshControl } from 'react-native';
+import { shadow } from '../ui/shadow';
 import { Ionicons } from '@expo/vector-icons';
 import { useDogs } from '../hooks/useDogs';
 import Loading from '../ui/Loading';
@@ -162,11 +163,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadow(2),
   },
   dogHeader: {
     flexDirection: 'row',

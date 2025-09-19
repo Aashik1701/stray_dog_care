@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { shadow } from '../ui/shadow';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
 import { useAuth } from '../contexts/AuthProvider';
@@ -169,15 +170,11 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 24, fontWeight: '700', color: '#111827' },
   subtitle: { fontSize: 16, color: '#6b7280', marginTop: 4 },
-  profileButton: { 
-    padding: 8, 
-    borderRadius: 8, 
+  profileButton: {
+    padding: 8,
+    borderRadius: 8,
     backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    ...shadow(1),
   },
   section: { marginBottom: 24 },
   sectionTitle: { fontSize: 18, fontWeight: '600', color: '#111827', marginBottom: 12 },
@@ -189,11 +186,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
     borderLeftWidth: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadow(2),
   },
   actionIcon: { marginRight: 12 },
   actionText: { flex: 1 },
@@ -206,11 +199,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadow(2),
   },
   statIcon: { 
     width: 48, 
@@ -226,11 +215,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 16,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...shadow(2),
   },
   profileHeader: { flexDirection: 'row', alignItems: 'center' },
   profileAvatar: {
