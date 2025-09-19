@@ -21,6 +21,9 @@ const io = socketIo(server, {
   }
 });
 
+// Attach to app for access in controllers
+app.set('io', io);
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);

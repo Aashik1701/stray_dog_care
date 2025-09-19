@@ -196,6 +196,18 @@ const dogSchema = new mongoose.Schema({
     },
     details: String
   }],
+
+  // Structured status / health change history (immutable audit trail)
+  history: [{
+    at: { type: Date, default: Date.now },
+    by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    changes: [{
+      field: String,
+      from: mongoose.Schema.Types.Mixed,
+      to: mongoose.Schema.Types.Mixed
+    }],
+    note: String
+  }],
   
   // Notes and Comments
   notes: String,

@@ -1,6 +1,7 @@
 const Dog = require('../models/Dog');
 const User = require('../models/User');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { diffObjects } = require('../utils/diff');
 
 // @desc    Get all dogs with filtering and pagination
 // @route   GET /api/dogs
@@ -183,6 +184,20 @@ const createDog = asyncHandler(async (req, res) => {
       message: 'Dog registered successfully',
       data: dog
     });
+
+    // Emit creation event
+    if (req.app.get('io')) {
+      req.app.get('io').emit('dog.created', {
+        id: dog._id,
+        dogId: dog.dogId,
+        zone: dog.zone,
+        status: dog.status,
+        healthStatus: dog.healthStatus,
+        createdAt: dog.createdAt,
+        reportedBy: dog.reportedBy,
+        organization: dog.organization
+      });
+    }
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -244,58 +259,54 @@ const updateDog = asyncHandler(async (req, res) => {
 // @route   PATCH /api/dogs/:id/status
 // @access  Private
 const updateDogStatus = asyncHandler(async (req, res) => {
-  try {
-    const { healthStatus, status, notes } = req.body;
-    
-    const dog = await Dog.findById(req.params.id);
+  const { healthStatus, status, notes } = req.body;
 
-    if (!dog) {
-      return res.status(404).json({
-        success: false,
-        message: 'Dog not found'
-      });
-    }
-
-    // Update health status
-    if (healthStatus) {
-      Object.assign(dog.healthStatus, healthStatus);
-    }
-
-    // Update general status
-    if (status) {
-      dog.status = status;
-    }
-
-    if (notes) {
-      dog.notes = notes;
-    }
-
-    await dog.save();
-
-    // Add activity log
-    const actions = [];
-    if (healthStatus?.isVaccinated) actions.push('vaccinated');
-    if (healthStatus?.isSterilized) actions.push('sterilized');
-    if (status) actions.push(`status changed to ${status}`);
-
-    await dog.addActivity(
-      `Health status updated: ${actions.join(', ')}`,
-      req.user._id,
-      notes || 'Status update'
-    );
-
-    res.json({
-      success: true,
-      message: 'Dog status updated successfully',
-      data: dog
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error updating dog status',
-      error: error.message
-    });
+  const dog = await Dog.findById(req.params.id);
+  if (!dog) {
+    return res.status(404).json({ success: false, message: 'Dog not found' });
   }
+
+  // Snapshot before
+  const before = {
+    status: dog.status,
+    isVaccinated: dog.healthStatus.isVaccinated,
+    isSterilized: dog.healthStatus.isSterilized,
+    isInjured: dog.healthStatus.isInjured
+  };
+
+  if (healthStatus) Object.assign(dog.healthStatus, healthStatus);
+  if (status) dog.status = status;
+  if (notes) dog.notes = notes;
+
+  await dog.save();
+
+  const after = {
+    status: dog.status,
+    isVaccinated: dog.healthStatus.isVaccinated,
+    isSterilized: dog.healthStatus.isSterilized,
+    isInjured: dog.healthStatus.isInjured
+  };
+
+  const changes = diffObjects(before, after, Object.keys(before));
+
+  if (changes.length) {
+    dog.history.push({
+      at: new Date(),
+      by: req.user._id,
+      changes,
+      note: notes
+    });
+    await dog.save();
+  }
+
+  await dog.addActivity('Dog status updated', req.user._id, notes || 'Status update');
+
+  // Emit socket event if io present on app (will wire later)
+  if (req.app.get('io')) {
+    req.app.get('io').emit('dog.updated', { id: dog._id, changes, status: dog.status, healthStatus: dog.healthStatus });
+  }
+
+  res.json({ success: true, message: 'Dog status updated', data: dog });
 });
 
 // @desc    Get dogs near a location

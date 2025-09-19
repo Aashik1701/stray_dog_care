@@ -10,6 +10,7 @@ const {
   getDogsStatistics
 } = require('../controllers/dogController');
 const { auth, authorize, sameOrganization, optionalAuth } = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 
 const router = express.Router();
 
@@ -25,7 +26,7 @@ router.use(sameOrganization); // Apply organization filtering
 
 router.post('/', createDog);
 router.put('/:id', updateDog);
-router.patch('/:id/status', updateDogStatus);
+router.patch('/:id/status', requireRole('field_worker','ngo_coordinator','veterinarian','municipal_admin','system_admin'), updateDogStatus);
 
 // Admin only routes
 router.delete('/:id', authorize('system_admin', 'municipal_admin'), deleteDog);
