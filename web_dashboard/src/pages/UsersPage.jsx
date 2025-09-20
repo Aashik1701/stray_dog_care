@@ -224,6 +224,7 @@ const UsersPage = () => {
                             ? 'text-red-700 bg-red-100 hover:bg-red-200'
                             : 'text-green-700 bg-green-100 hover:bg-green-200'
                         } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+                        aria-label={user.isActive ? 'Deactivate user' : 'Activate user'}
                       >
                         {user.isActive ? 'Deactivate' : 'Activate'}
                       </button>

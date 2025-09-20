@@ -81,6 +81,7 @@ export default function DogsTable({ dogs = [], onRowClick, loading = false }) {
               id="dogs-table-search"
               name="dogsTableSearch"
               type="text"
+              aria-label="Search dogs"
               placeholder="Search dogs..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -178,10 +179,10 @@ export default function DogsTable({ dogs = [], onRowClick, loading = false }) {
         <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
           <div className="flex items-center justify-between">
             <div className="flex-1 flex justify-between sm:hidden">
-              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+              <button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" aria-label="Previous page">
                 Previous
               </button>
-              <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+              <button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50" aria-label="Next page">
                 Next
               </button>
             </div>

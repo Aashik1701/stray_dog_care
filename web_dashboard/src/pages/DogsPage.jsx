@@ -116,6 +116,7 @@ export default function DogsPage() {
                 id="filter-search"
                 name="search"
                 type="text"
+                aria-label="Search dogs"
                 placeholder="Search by ID, name, or location..."
                 value={filters.search}
                 onChange={(e) => handleFilterChange('search', e.target.value)}
@@ -242,6 +243,7 @@ export default function DogsPage() {
               onClick={() => fetchDogs(pagination.currentPage - 1)}
               disabled={!pagination.hasPrevPage}
               className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Previous page"
             >
               Previous
             </button>
@@ -249,6 +251,7 @@ export default function DogsPage() {
               onClick={() => fetchDogs(pagination.currentPage + 1)}
               disabled={!pagination.hasNextPage}
               className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Next page"
             >
               Next
             </button>
@@ -266,6 +269,7 @@ export default function DogsPage() {
                   onClick={() => fetchDogs(pagination.currentPage - 1)}
                   disabled={!pagination.hasPrevPage}
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Previous page"
                 >
                   Previous
                 </button>
@@ -273,6 +277,7 @@ export default function DogsPage() {
                   onClick={() => fetchDogs(pagination.currentPage + 1)}
                   disabled={!pagination.hasNextPage}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Next page"
                 >
                   Next
                 </button>
