@@ -28,15 +28,31 @@ export default function LoginScreen() {
         <TextInput
           style={styles.input}
           placeholder="Email or username"
+          nativeID="login-email"
+          accessibilityLabel="Email"
           autoCapitalize="none"
+          autoCorrect={false}
           keyboardType="email-address"
+          inputMode="email"
+          textContentType="emailAddress"
+          autoComplete="email"
+          importantForAutofill="yes"
+          returnKeyType="next"
           value={email}
           onChangeText={setEmail}
         />
         <TextInput
           style={styles.input}
           placeholder="Password"
+          nativeID="login-password"
+          accessibilityLabel="Password"
           secureTextEntry
+          autoCorrect={false}
+          textContentType="password"
+          autoComplete="current-password"
+          importantForAutofill="yes"
+          returnKeyType="go"
+          onSubmitEditing={onSubmit}
           value={password}
           onChangeText={setPassword}
         />
