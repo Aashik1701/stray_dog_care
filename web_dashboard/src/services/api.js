@@ -26,7 +26,154 @@ class ApiService {
     return headers;
   }
 
+  // Mock data for demo mode
+  getMockUserData() {
+    return {
+      _id: 'demo-user-web-123',
+      username: 'demo_user',
+      email: 'demo@straydogcare.com',
+      role: 'field_worker',
+      permissions: ['create_dog', 'edit_dog'],
+      profile: {
+        firstName: 'Demo',
+        lastName: 'User',
+        phoneNumber: '1234567890'
+      },
+      isActive: true,
+      isEmailVerified: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+  }
+
+  getMockStatsData() {
+    return {
+      total: 25,
+      sterilized: 12,
+      vaccinated: 18,
+      injured: 3,
+      adopted: 5
+    };
+  }
+
+  // Check if token is a demo token
+  isDemoToken(token) {
+    return token && token.startsWith('demo-token');
+  }
+
+  getMockDogsData() {
+    return [
+      {
+        _id: 'demo-dog-1',
+        dogId: 'DOG_2024_12345',
+        name: 'Buddy',
+        size: 'medium',
+        color: 'brown',
+        breed: 'mixed',
+        gender: 'male',
+        estimatedAge: 'adult',
+        location: {
+          type: 'Point',
+          coordinates: [77.5946, 12.9716]
+        },
+        address: {
+          area: 'MG Road',
+          city: 'Bangalore',
+          state: 'Karnataka'
+        },
+        zone: 'Central Bangalore',
+        healthStatus: {
+          isHealthy: true,
+          isVaccinated: true,
+          isSterilized: true,
+          lastHealthCheck: new Date().toISOString()
+        },
+        behavior: {
+          isAggressive: false,
+          isFriendly: true,
+          fearLevel: 'low'
+        },
+        images: [],
+        status: 'active',
+        reportedBy: 'demo-user-web-123',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      },
+      {
+        _id: 'demo-dog-2',
+        dogId: 'DOG_2024_12346',
+        name: 'Luna',
+        size: 'small',
+        color: 'white',
+        breed: 'mixed',
+        gender: 'female',
+        estimatedAge: 'young',
+        location: {
+          type: 'Point',
+          coordinates: [77.6146, 12.9816]
+        },
+        address: {
+          area: 'Indiranagar',
+          city: 'Bangalore',
+          state: 'Karnataka'
+        },
+        zone: 'East Bangalore',
+        healthStatus: {
+          isHealthy: false,
+          isInjured: true,
+          injuryDescription: 'Minor cut on paw',
+          isVaccinated: false,
+          isSterilized: false
+        },
+        behavior: {
+          isAggressive: false,
+          isFriendly: true,
+          fearLevel: 'medium'
+        },
+        images: [],
+        status: 'active',
+        reportedBy: 'demo-user-web-123',
+        createdAt: new Date(Date.now() - 86400000).toISOString(),
+        updatedAt: new Date(Date.now() - 86400000).toISOString()
+      }
+    ];
+  }
+
   async request(endpoint, options = {}) {
+    // Handle demo mode for specific endpoints
+    if (this.isDemoToken(this.token)) {
+      if (endpoint === '/auth/me' && (!options.method || options.method === 'GET')) {
+        return {
+          success: true,
+          data: this.getMockUserData()
+        };
+      }
+      
+      if (endpoint === '/dogs/stats' && (!options.method || options.method === 'GET')) {
+        return {
+          success: true,
+          data: this.getMockStatsData()
+        };
+      }
+
+      if (endpoint.startsWith('/dogs') && !endpoint.includes('/') && (!options.method || options.method === 'GET')) {
+        // Handle /dogs endpoint for listing dogs
+        return {
+          success: true,
+          data: {
+            dogs: this.getMockDogsData(),
+            pagination: {
+              currentPage: 1,
+              totalPages: 1,
+              totalDogs: 2,
+              hasNextPage: false,
+              hasPrevPage: false
+            }
+          }
+        };
+      }
+    }
+
     const url = `${API_BASE_URL}/api${endpoint}`;
     const config = {
       headers: this.getHeaders(),

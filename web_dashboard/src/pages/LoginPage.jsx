@@ -32,6 +32,7 @@ const LoginPage = () => {
     setFormError('');
 
     try {
+      // Always succeed in demo mode - no validation needed
       const result = await login(formData);
       if (!result.success) {
         setFormError(result.error);
@@ -67,13 +68,7 @@ const LoginPage = () => {
             Sign in to Dogster Dashboard
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Or{' '}
-            <Link
-              to="/register"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              register for a new account
-            </Link>
+            Demo Mode - Leave fields empty to use demo account
           </p>
         </div>
         
@@ -97,7 +92,7 @@ const LoginPage = () => {
 
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email" className="sr-only">
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
                 Email address or Username
               </label>
               <input
@@ -106,15 +101,14 @@ const LoginPage = () => {
                 type="text"
                 autoComplete="username"
                 inputMode="email"
-                required
-                className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address or Username"
+                className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Email address or Username (optional)"
                 value={formData.email}
                 onChange={handleChange}
               />
             </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
+            <div className="mt-4">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <input
@@ -122,9 +116,8 @@ const LoginPage = () => {
                 name="password"
                 type="password"
                 autoComplete="current-password"
-                required
-                className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Password (optional)"
                 value={formData.password}
                 onChange={handleChange}
               />

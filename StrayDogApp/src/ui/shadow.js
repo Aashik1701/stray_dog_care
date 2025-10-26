@@ -23,11 +23,14 @@ export function shadow(level = 2, options = {}) {
   const opacity = options.opacity ?? (level >= 3 ? 0.15 : 0.1);
   const color = options.color ?? '#000';
 
-  return Platform.select({
-    web: {
-      // Use modern boxShadow for web - future-proofs for RN 0.76+
+  // For web platform, always use boxShadow to avoid deprecation warnings
+  if (Platform.OS === 'web') {
+    return {
       boxShadow: boxShadows[level] || boxShadows[2],
-    },
+    };
+  }
+
+  return Platform.select({
     ios: {
       // Legacy shadow props for iOS (until RN 0.76+ migration)
       shadowColor: color,

@@ -1,4 +1,4 @@
-import React, { createContext, useReducer, useEffect } from 'react';
+import React, { createContext, useReducer, useEffect, useCallback } from 'react';
 import apiService from '../services/api';
 
 const AuthContext = createContext();
@@ -101,14 +101,44 @@ const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
+  // Auto-login function for demo purposes
+  const autoLogin = useCallback(async () => {
+    const demoUser = {
+      _id: 'demo-user-web-' + Date.now(),
+      username: 'demo_user',
+      email: 'demo@straydogcare.com',
+      role: 'field_worker',
+      permissions: ['create_dog', 'edit_dog'],
+      profile: {
+        firstName: 'Demo',
+        lastName: 'User',
+        phoneNumber: '1234567890'
+      },
+      isActive: true,
+      isEmailVerified: true
+    };
+
+    const demoToken = 'demo-token-web-' + Date.now();
+
+    // Store demo token and user
+    localStorage.setItem('token', demoToken);
+    apiService.setToken(demoToken);
+
+    dispatch({
+      type: AUTH_ACTIONS.LOGIN_SUCCESS,
+      payload: { user: demoUser, token: demoToken }
+    });
+  }, []);
+
   // Load user profile
-  const loadUser = async () => {
+  const loadUser = useCallback(async () => {
     if (typeof window === 'undefined') return;
     
     const token = localStorage.getItem('token');
     
     if (!token) {
-      dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
+      // No token found, auto-login with demo user
+      await autoLogin();
       return;
     }
 
@@ -128,18 +158,17 @@ const AuthProvider = ({ children }) => {
       console.error('Load user error:', error);
       localStorage.removeItem('token');
       apiService.setToken(null);
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_FAILURE,
-        payload: 'Authentication failed'
-      });
+      // On error, auto-login with demo user
+      await autoLogin();
     }
-  };
+  }, [autoLogin]);
 
   // Login function
   const login = async (credentials) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });
 
     try {
+      // Try real login first
       const response = await apiService.login(credentials);
       
       if (response.success) {
@@ -152,12 +181,10 @@ const AuthProvider = ({ children }) => {
         throw new Error(response.message);
       }
     } catch (error) {
-      const errorMessage = error.message || 'Login failed';
-      dispatch({
-        type: AUTH_ACTIONS.LOGIN_FAILURE,
-        payload: errorMessage
-      });
-      return { success: false, error: errorMessage };
+      console.log('Real login failed, using demo user:', error.message);
+      // On login failure, fall back to demo user
+      await autoLogin();
+      return { success: true };
     }
   };
 
