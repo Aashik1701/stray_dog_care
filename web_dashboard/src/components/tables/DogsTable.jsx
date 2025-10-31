@@ -52,6 +52,19 @@ export default function DogsTable({ dogs = [], onRowClick, loading = false }) {
     return <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Pending</span>;
   };
 
+  const getPriorityBadge = (priority) => {
+    const p = (priority || 'normal').toLowerCase();
+    const map = {
+      critical: 'bg-red-100 text-red-800',
+      high: 'bg-orange-100 text-orange-800',
+      normal: 'bg-sky-100 text-sky-800',
+      low: 'bg-gray-100 text-gray-800',
+    };
+    const cls = map[p] || map.normal;
+    const label = p.charAt(0).toUpperCase() + p.slice(1);
+    return <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${cls}`}>{label}</span>;
+  };
+
   if (loading) {
     return (
       <div className="bg-white shadow rounded-lg p-6">
@@ -117,6 +130,9 @@ export default function DogsTable({ dogs = [], onRowClick, loading = false }) {
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Priority
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Location
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -155,6 +171,9 @@ export default function DogsTable({ dogs = [], onRowClick, loading = false }) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getStatusBadge(dog)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {getPriorityBadge(dog.priority)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <div>

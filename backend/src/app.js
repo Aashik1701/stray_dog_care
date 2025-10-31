@@ -9,6 +9,7 @@ require('dotenv').config();
 // Import routes
 const authRoutes = require('./routes/auth');
 const dogRoutes = require('./routes/dogs');
+const nlpRoutes = require('./routes/nlp');
 const userRoutes = require('./routes/users');
 const uploadRoutes = require('./routes/uploads');
 
@@ -76,6 +77,7 @@ app.get('/health', (req, res) => {
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/dogs', dogRoutes);
+app.use('/api/nlp', nlpRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/uploads', uploadRoutes);
 

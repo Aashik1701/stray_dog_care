@@ -272,6 +272,14 @@ class ApiService {
     });
     return this.request(`/dogs/location?${params}`);
   }
+
+  // NLP methods
+  async getNLPStatus() {
+    if (this.isDemoToken(this.token)) {
+      return { success: true, data: { enabled: true, circuitOpen: false, failureCount: 0 } };
+    }
+    return this.request('/nlp/status');
+  }
 }
 
 export default new ApiService();

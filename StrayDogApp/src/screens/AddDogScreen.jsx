@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image, FlatList } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image, FlatList, Switch, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,10 @@ export default function AddDogScreen({ navigation }) {
   const [images, setImages] = useState([]); // array of local URIs
   const [uploadProgress, setUploadProgress] = useState({}); // index -> 0-100
   const [uploading, setUploading] = useState(false);
+  const [aiAutofill, setAiAutofill] = useState(true);
+  const [nlpLoading, setNlpLoading] = useState(false);
+  const [preview, setPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -61,10 +65,28 @@ export default function AddDogScreen({ navigation }) {
     setImages(images.filter((_, i) => i !== index));
   };
 
+  const handlePreview = async () => {
+    if (!aiAutofill) return;
+    if (!dogData.notes || dogData.notes.trim().length < 8) {
+      return Alert.alert('Add notes', 'Please enter a bit more detail for AI analysis.');
+    }
+    try {
+      setPreviewLoading(true);
+      const { data } = await api.post('/nlp/analyze-report', { text: dogData.notes, language: 'en' });
+      setPreview(data?.data || null);
+    } catch (e) {
+      console.log('AI preview failed', e?.response?.data || e.message);
+      Alert.alert('AI unavailable', e?.response?.data?.message || 'Could not analyze at the moment. You can still save without AI.');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!dogData.size) return Alert.alert('Validation', 'Please enter size');
     if (!coords) return Alert.alert('Location', 'Location not available yet');
     if (!dogData.zone) return Alert.alert('Validation', 'Please enter zone');
+    if (aiAutofill && !dogData.notes) return Alert.alert('Notes required', 'Please add some notes to auto-fill with AI.');
 
     setSubmitting(true);
     try {
@@ -112,12 +134,19 @@ export default function AddDogScreen({ navigation }) {
         size: dogData.size,
         color: dogData.color || undefined,
         gender: dogData.gender || undefined,
+        // Keep root-level notes for backward compatibility
         notes: dogData.notes || undefined,
+        // Provide notes to healthStatus for NLP pipeline
+        healthStatus: dogData.notes ? { notes: dogData.notes } : undefined,
         zone: dogData.zone,
         coordinates: [coords.longitude, coords.latitude],
         images: uploadedImages,
       };
-      const res = await api.post('/dogs', payload);
+      // If AI autofill is enabled and notes are provided, use NLP-assisted endpoint
+      const useNLP = aiAutofill && !!dogData.notes;
+      const endpoint = useNLP ? '/dogs/nlp' : '/dogs';
+      if (useNLP) setNlpLoading(true);
+      const res = await api.post(endpoint, payload);
       Alert.alert('Success', 'Dog registered successfully');
       navigation.navigate('Home');
     } catch (e) {
@@ -125,6 +154,7 @@ export default function AddDogScreen({ navigation }) {
       Alert.alert('Error', e?.response?.data?.message || 'Failed to register dog');
     } finally {
       setSubmitting(false);
+      setNlpLoading(false);
     }
   };
 
@@ -183,11 +213,81 @@ export default function AddDogScreen({ navigation }) {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Dog Details</Text>
+        {/* AI Autofill Toggle */}
+        <View style={styles.toggleRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toggleTitle}>Auto-fill with AI</Text>
+            <Text style={styles.toggleHint}>Use your notes to analyze and set priority and health insights.</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Switch value={aiAutofill} onValueChange={setAiAutofill} />
+            {nlpLoading && (
+              <View style={styles.aiProgress}>
+                <ActivityIndicator size="small" color="#10b981" />
+                <Text style={styles.aiProgressText}>Analyzing…</Text>
+              </View>
+            )}
+          </View>
+        </View>
         <TextInput placeholder="Size (small/medium/large)" style={styles.input} value={dogData.size} onChangeText={(t)=>setDogData(s=>({ ...s, size: t }))} />
         <TextInput placeholder="Color" style={styles.input} value={dogData.color} onChangeText={(t)=>setDogData(s=>({ ...s, color: t }))} />
         <TextInput placeholder="Gender" style={styles.input} value={dogData.gender} onChangeText={(t)=>setDogData(s=>({ ...s, gender: t }))} />
         <TextInput placeholder="Zone (e.g., Zone 7)" style={styles.input} value={dogData.zone} onChangeText={(t)=>setDogData(s=>({ ...s, zone: t }))} />
+        {/* Zone suggestions from AI */}
+        {!!(aiAutofill && preview?.entities?.locations?.length) && (
+          <View style={styles.suggestionRow}>
+            <Text style={styles.suggestionLabel}>Suggestions:</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {preview.entities.locations.slice(0, 4).map((loc, idx) => (
+                <TouchableOpacity key={idx} style={styles.chip} onPress={() => setDogData(s => ({ ...s, zone: loc }))}>
+                  <Text style={styles.chipText}>{loc}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
         <TextInput placeholder="Notes" style={[styles.input, { height: 100 }]} value={dogData.notes} onChangeText={(t)=>setDogData(s=>({ ...s, notes: t }))} multiline />
+        {aiAutofill && (
+          <TouchableOpacity style={styles.previewButton} onPress={handlePreview} disabled={previewLoading}>
+            {previewLoading ? (
+              <>
+                <ActivityIndicator size="small" color="#111827" />
+                <Text style={styles.previewButtonText}>Generating preview…</Text>
+              </>
+            ) : (
+              <Text style={styles.previewButtonText}>Preview with AI</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {/* Compact AI preview card */}
+        {aiAutofill && preview && (
+          <View style={styles.previewCard}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={styles.previewTitle}>AI Summary</Text>
+              <View style={[styles.badge, getUrgencyStyle(preview.urgency_score ?? preview.urgency)]}>
+                <Text style={styles.badgeText}>{formatUrgency(preview.urgency_score ?? preview.urgency)}</Text>
+              </View>
+            </View>
+            <Text style={styles.previewText}>{preview.summary}</Text>
+            <View style={styles.previewMeta}>
+              <View style={styles.metaItem}><Text style={styles.metaKey}>Category:</Text><Text style={styles.metaVal}>{preview.category}</Text></View>
+              <View style={styles.metaItem}><Text style={styles.metaKey}>Sentiment:</Text><Text style={styles.metaVal}>{preview.sentiment}</Text></View>
+            </View>
+            {!!(preview.entities?.symptoms?.length) && (
+              <View style={{ marginTop: 8 }}>
+                <Text style={styles.suggestionLabel}>Symptoms:</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                  {preview.entities.symptoms.slice(0,6).map((s, i) => (
+                    <View key={i} style={[styles.chip, { backgroundColor: '#f3f4f6' }]}>
+                      <Text style={[styles.chipText, { color: '#374151' }]}>{s}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={submitting || uploading}>
@@ -197,10 +297,45 @@ export default function AddDogScreen({ navigation }) {
   );
 }
 
+function getUrgencyStyle(u) {
+  const v = typeof u === 'number' ? u : 0;
+  if (v >= 0.85) return { backgroundColor: '#fee2e2' }; // red-100
+  if (v >= 0.7) return { backgroundColor: '#ffedd5' }; // orange-100
+  if (v >= 0.4) return { backgroundColor: '#dbeafe' }; // sky-100
+  return { backgroundColor: '#f3f4f6' }; // gray-100
+}
+
+function formatUrgency(u) {
+  const v = Math.round(((u ?? 0) * 100));
+  if (u >= 0.85) return `Critical · ${v}%`;
+  if (u >= 0.7) return `High · ${v}%`;
+  if (u >= 0.4) return `Normal · ${v}%`;
+  return `Low · ${v}%`;
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f9fafb' },
   section: { backgroundColor: '#fff', padding: 12, borderRadius: 10, marginBottom: 12 },
   sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8 },
+  toggleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, marginBottom: 12 },
+  toggleTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  toggleHint: { fontSize: 12, color: '#6b7280' },
+  aiProgress: { marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  aiProgressText: { fontSize: 12, color: '#10b981', fontWeight: '600' },
+  suggestionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  suggestionLabel: { fontSize: 12, color: '#6b7280', marginRight: 6 },
+  chip: { backgroundColor: '#e0f2fe', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999, marginRight: 6 },
+  chipText: { color: '#0369a1', fontSize: 12, fontWeight: '600' },
+  previewButton: { flexDirection: 'row', gap: 8, alignItems: 'center', alignSelf: 'flex-start', backgroundColor: '#e5e7eb', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 8, marginTop: 6 },
+  previewButtonText: { color: '#111827', fontWeight: '700' },
+  previewCard: { marginTop: 10, backgroundColor: '#f9fafb', borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 10, padding: 12 },
+  previewTitle: { fontSize: 14, fontWeight: '700', color: '#111827' },
+  previewText: { marginTop: 6, fontSize: 13, color: '#374151' },
+  previewMeta: { marginTop: 8, flexDirection: 'row', gap: 12 },
+  metaItem: { flexDirection: 'row', gap: 4 },
+  metaKey: { fontSize: 12, color: '#6b7280' },
+  metaVal: { fontSize: 12, color: '#111827', fontWeight: '600' },
+  badge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 999 },
   photoContainer: { marginTop: 8 },
   imageWrapper: { position: 'relative', marginRight: 8 },
   photo: { width: 80, height: 80, borderRadius: 8 },

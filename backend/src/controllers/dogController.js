@@ -1,5 +1,6 @@
 const Dog = require('../models/Dog');
 const User = require('../models/User');
+const nlpService = require('../services/nlpService');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { diffObjects } = require('../utils/diff');
 
@@ -415,4 +416,114 @@ module.exports = {
   getDogsByLocation,
   deleteDog,
   getDogsStatistics
+};
+
+// --- NLP-assisted create flow ---
+// @desc    Create new dog record with NLP enrichment and duplicate detection
+// @route   POST /api/dogs/nlp
+// @access  Private
+module.exports.createDogWithNLP = async (req, res) => {
+  try {
+    const {
+      size,
+      color,
+      breed,
+      gender,
+      estimatedAge,
+      coordinates, // [longitude, latitude]
+      address,
+      zone,
+      healthStatus = {},
+      behavior,
+      images,
+      notes // optional root-level notes
+    } = req.body;
+
+    if (!size || !coordinates || !zone) {
+      return res.status(400).json({ success: false, message: 'Size, coordinates, and zone are required' });
+    }
+
+    // Prefer healthStatus.notes, fallback to root notes
+    const healthNotes = healthStatus?.notes || notes || '';
+
+    // Duplicate detection via NLP (text-based)
+    if (healthNotes) {
+      try {
+        const duplicateResult = await nlpService.findDuplicates(healthNotes);
+        if (duplicateResult?.is_potential_duplicate) {
+          return res.status(400).json({
+            success: false,
+            message: 'Potential duplicate detected',
+            data: { similar_reports: duplicateResult.similar_reports || [] }
+          });
+        }
+      } catch (e) {
+        // Non-fatal
+        console.warn('NLP duplicate check failed:', e.message);
+      }
+    }
+
+    // Analyze report for category, sentiment, urgency, summary, entities
+    let nlpAnalysis = null;
+    if (healthNotes) {
+      try {
+        const analysis = await nlpService.analyzeReport(healthNotes, req.body.language || 'en');
+        if (analysis) {
+          nlpAnalysis = {
+            category: analysis.category,
+            confidence: analysis.confidence,
+            sentiment: analysis.sentiment,
+            urgency: analysis.urgency_score ?? analysis.urgency,
+            summary: analysis.summary,
+            extractedEntities: analysis.entities || analysis.extractedEntities || {}
+          };
+        }
+      } catch (e) {
+        console.warn('NLP analyze-report failed:', e.message);
+      }
+    }
+
+    // Map urgency -> priority
+    const urgency = nlpAnalysis?.urgency ?? 0;
+    const priority = urgency >= 0.85 ? 'critical' : urgency >= 0.7 ? 'high' : urgency >= 0.4 ? 'normal' : 'low';
+
+    const dogData = {
+      size,
+      color,
+      breed,
+      gender,
+      estimatedAge,
+      location: { type: 'Point', coordinates },
+      address,
+      zone,
+      healthStatus: {
+        ...healthStatus,
+        notes: healthNotes || healthStatus?.notes,
+        nlpAnalysis: nlpAnalysis || undefined
+      },
+      behavior,
+      images: images || [],
+      notes,
+      priority,
+      reportedBy: req.user._id,
+      organization: req.user.organization
+    };
+
+    const dog = new Dog(dogData);
+    await dog.save();
+
+    await dog.addActivity('Dog registered (NLP)', req.user._id, 'Initial registration with NLP enrichment');
+    await req.user.updateStatistics?.('dogsRegistered');
+
+    await dog.populate('reportedBy', 'username profile.firstName profile.lastName');
+    await dog.populate('organization', 'name type');
+
+    res.status(201).json({ success: true, message: 'Dog registered successfully', data: dog });
+
+    if (urgency >= 0.7 && req.app.get('io')) {
+      req.app.get('io').emit('dog.highUrgency', { id: dog._id, urgency, zone: dog.zone });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error creating dog record', error: error.message });
+  }
 };

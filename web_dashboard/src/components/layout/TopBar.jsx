@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { 
   MagnifyingGlassIcon, 
@@ -8,6 +8,7 @@ import {
   ShieldCheckIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+import api from '../../services/api';
 
 export default function TopBar({ stats }) {
   const [searchFocused, setSearchFocused] = useState(false);
@@ -50,6 +51,55 @@ export default function TopBar({ stats }) {
       type: 'info'
     }
   ];
+
+  const [nlpStatus, setNlpStatus] = useState({ enabled: null });
+  useEffect(() => {
+    let mounted = true;
+    const fetchStatus = async () => {
+      try {
+        const res = await api.getNLPStatus();
+        if (mounted && res?.success) setNlpStatus(res.data);
+      } catch {
+        if (mounted) setNlpStatus({ enabled: null });
+      }
+    };
+    fetchStatus();
+    const iv = setInterval(fetchStatus, 30000);
+    return () => { mounted = false; clearInterval(iv); };
+  }, []);
+
+  const renderNLPBadge = () => {
+    const { enabled, circuitOpen, serviceHealthy } = nlpStatus || {};
+    const isUnknown = enabled === null || typeof enabled === 'undefined';
+    const degraded = enabled && (circuitOpen || serviceHealthy === false);
+    const color = isUnknown
+      ? 'bg-gray-100 text-gray-700'
+      : !enabled
+      ? 'bg-gray-200 text-gray-600'
+      : degraded
+      ? 'bg-yellow-100 text-yellow-800'
+      : 'bg-green-100 text-green-800';
+    const dot = isUnknown
+      ? 'bg-gray-400'
+      : !enabled
+      ? 'bg-gray-400'
+      : degraded
+      ? 'bg-yellow-500'
+      : 'bg-green-500';
+    const label = isUnknown
+      ? 'NLP Checking…'
+      : !enabled
+      ? 'NLP Off'
+      : degraded
+      ? 'NLP Degraded'
+      : 'NLP Ready';
+    return (
+      <div className={`hidden md:flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold ${color}`} title="NLP client status">
+        <span className={`inline-block w-2.5 h-2.5 rounded-full ${dot}`} aria-hidden="true"></span>
+        <span>{label}</span>
+      </div>
+    );
+  };
 
   return (
   <Motion.header 
@@ -96,6 +146,7 @@ export default function TopBar({ stats }) {
 
           {/* Right Section */}
           <div className="flex items-center space-x-4 lg:space-x-6">
+            {renderNLPBadge()}
             {/* Quick Stats - Hidden on mobile, visible on tablet+ */}
             <div className="items-center hidden space-x-4 md:flex lg:space-x-6">
               {quickStats.map((stat, index) => (

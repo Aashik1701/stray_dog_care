@@ -9,11 +9,14 @@ export default function HomeScreen({ navigation }) {
   const [stats, setStats] = useState(null);
   const [me, setMe] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const { logout, user } = useAuth();
+  const { logout, user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    // Wait for auth to be initialized so demo token is set before API calls
+    if (!authLoading) {
+      fetchData();
+    }
+  }, [authLoading]);
 
   const fetchData = async () => {
     try {

@@ -167,6 +167,23 @@ export default function DogDetailScreen({ route, navigation }) {
             <Text style={styles.locationText}>{dog.zone}</Text>
           </View>
         </View>
+        {dog.priority && (
+          <View
+            style={[
+              styles.priorityRibbon,
+              dog.priority === 'critical'
+                ? styles.priorityCritical
+                : dog.priority === 'high'
+                ? styles.priorityHigh
+                : dog.priority === 'normal'
+                ? styles.priorityNormal
+                : styles.priorityLow,
+            ]}
+          >
+            <Ionicons name="alert-circle" size={14} color="#fff" />
+            <Text style={styles.priorityRibbonText}>{dog.priority.toUpperCase()}</Text>
+          </View>
+        )}
       </View>
 
       {/* Health Status */}
@@ -309,6 +326,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     ...shadow(2),
   },
+  priorityRibbon: {
+    marginTop: 12,
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  priorityRibbonText: { color: '#fff', fontWeight: '800', fontSize: 12 },
+  priorityCritical: { backgroundColor: '#b91c1c' },
+  priorityHigh: { backgroundColor: '#ef4444' },
+  priorityNormal: { backgroundColor: '#f59e0b' },
+  priorityLow: { backgroundColor: '#10b981' },
   dogId: { fontSize: 24, fontWeight: '700', color: '#111827', marginBottom: 8 },
   basicInfo: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   basicInfoText: { fontSize: 16, color: '#6b7280' },

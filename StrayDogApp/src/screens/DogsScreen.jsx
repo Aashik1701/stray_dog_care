@@ -52,6 +52,22 @@ export default function DogsScreen({ navigation }) {
         </View>
         
         <View style={styles.statusContainer}>
+          {dog.priority && (
+            <View
+              style={[
+                styles.priorityBadge,
+                dog.priority === 'critical'
+                  ? styles.priorityCritical
+                  : dog.priority === 'high'
+                  ? styles.priorityHigh
+                  : dog.priority === 'normal'
+                  ? styles.priorityNormal
+                  : styles.priorityLow,
+              ]}
+            >
+              <Text style={styles.priorityText}>{dog.priority}</Text>
+            </View>
+          )}
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(dog) }]}>
             <Text style={styles.statusText}>{getStatusText(dog)}</Text>
           </View>
@@ -197,6 +213,18 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
   },
+  priorityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-end',
+    marginBottom: 6,
+  },
+  priorityText: { color: '#fff', fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  priorityCritical: { backgroundColor: '#b91c1c' },
+  priorityHigh: { backgroundColor: '#ef4444' },
+  priorityNormal: { backgroundColor: '#f59e0b' },
+  priorityLow: { backgroundColor: '#10b981' },
   statusText: {
     fontSize: 12,
     fontWeight: '600',

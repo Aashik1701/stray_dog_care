@@ -1,0 +1,3 @@
+.venv/
+nlp_service/.venv/lib
+__pycache__/

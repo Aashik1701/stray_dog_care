@@ -97,7 +97,22 @@ const dogSchema = new mongoose.Schema({
       default: false
     },
     sterilizationDate: Date,
-    lastHealthCheck: Date
+    lastHealthCheck: Date,
+    // Original free text and NLP-enriched analysis
+    notes: String,
+    nlpAnalysis: {
+      category: String, // e.g., injury case, adoption request
+      confidence: Number,
+      sentiment: String, // positive|neutral|negative
+      urgency: Number, // 0..1
+      summary: String,
+      extractedEntities: {
+        breeds: [String],
+        locations: [String],
+        symptoms: [String],
+        dates: [String]
+      }
+    }
   },
   
   // Behavioral Information
@@ -211,6 +226,20 @@ const dogSchema = new mongoose.Schema({
   
   // Notes and Comments
   notes: String,
+
+  // NLP-related transcription info (for voice reports)
+  transcription: {
+    originalLanguage: String,
+    transcribedText: String,
+    confidence: Number
+  },
+
+  // Priority derived from NLP urgency or manual assignment
+  priority: {
+    type: String,
+    enum: ['low', 'normal', 'high', 'critical'],
+    default: 'normal'
+  },
   
   // Timestamps
   createdAt: {

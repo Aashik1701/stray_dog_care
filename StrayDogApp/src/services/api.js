@@ -4,14 +4,11 @@ import Constants from 'expo-constants';
 function resolveBaseURL() {
   const envUrl = process.env.EXPO_PUBLIC_API_URL || process.env.API_URL;
   if (envUrl) return envUrl.replace(/\/$/, '');
-
   // Try to get from Expo config
   try {
     const apiUrl = Constants.expoConfig?.extra?.apiUrl;
     if (apiUrl) return apiUrl.replace(/\/$/, '');
   } catch {}
-
-  // Try to infer LAN IP from Expo host
   try {
     const hostUri = Constants.expoConfig?.hostUri || Constants?.manifest2?.extra?.expoClient?.hostUri;
     if (hostUri && hostUri.includes(':')) {
@@ -140,6 +137,8 @@ const getMockDogsData = () => ([
 
 // Check if token is a demo token
 const isDemoToken = (token) => token && token.startsWith('demo-token');
+// Heuristic demo mode: either we have a demo token, or auth isn't set yet during app bootstrap
+const isDemoMode = () => isDemoToken(authToken) || !authToken;
 
 api.interceptors.request.use((config) => {
   if (authToken) {
@@ -152,9 +151,9 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // If it's a demo token and the request failed, return mock data
-    if (isDemoToken(authToken)) {
-      const { url, method } = error.config;
+  // If we're in demo mode and the request failed, return mock data for known endpoints
+  if (isDemoMode()) {
+      const { url, method, data } = error.config;
       
       if (url.includes('/auth/me') && method === 'get') {
         return Promise.resolve({
@@ -202,10 +201,62 @@ api.interceptors.response.use(
           }
         });
       }
+
+      // Mock NLP analyze report in demo mode
+      if (url.includes('/nlp/analyze-report') && method === 'post') {
+        let payload = {};
+        try { payload = typeof data === 'string' ? JSON.parse(data) : (data || {}); } catch {}
+        const txt = (payload.text || '').toLowerCase();
+        const urgent = /bleed|injur|critical|urgent|bite/.test(txt);
+        const summary = 'Dog reported with possible injury near Indiranagar. Needs attention.';
+        const entities = {
+          breeds: [],
+          locations: ['Indiranagar', 'MG Road', 'Koramangala'],
+          symptoms: urgent ? ['injury', 'bleed'] : ['weak'],
+          dates: []
+        };
+        const resp = {
+          category: urgent ? 'injury case' : 'general sighting',
+          confidence: urgent ? 0.82 : 0.55,
+          sentiment: urgent ? 'negative' : 'neutral',
+          urgency: urgent ? 0.78 : 0.42,
+          urgency_score: urgent ? 0.78 : 0.42,
+          summary,
+          entities
+        };
+        return Promise.resolve({ data: { success: true, data: resp } });
+      }
+
+      // Mock dog creation endpoints in demo mode
+      if ((url.includes('/dogs') || url.includes('/dogs/nlp')) && method === 'post') {
+        let payload = {};
+        try { payload = typeof data === 'string' ? JSON.parse(data) : (data || {}); } catch {}
+        const now = new Date();
+        const created = {
+          _id: 'demo-dog-' + now.getTime(),
+          dogId: `DOG_${now.getFullYear()}_${Math.floor(Math.random()*100000).toString().padStart(5,'0')}`,
+          size: payload.size || 'medium',
+          color: payload.color || 'unknown',
+          breed: payload.breed || 'mixed',
+          gender: payload.gender || 'unknown',
+          estimatedAge: payload.estimatedAge || 'unknown',
+          location: { type: 'Point', coordinates: payload.coordinates || [77.6, 12.97] },
+          address: payload.address || {},
+          zone: payload.zone || 'Zone 1',
+          healthStatus: payload.healthStatus || {},
+          behavior: payload.behavior || {},
+          images: payload.images || [],
+          notes: payload.notes,
+          status: 'active',
+          reportedBy: getMockUserData()._id,
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString()
+        };
+        return Promise.resolve({ data: { success: true, message: 'Dog registered (demo)', data: created } });
+      }
     }
     
     return Promise.reject(error);
   }
 );
-
 export default api;
