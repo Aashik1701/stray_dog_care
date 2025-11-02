@@ -14,10 +14,13 @@ export default function LoginScreen({ navigation }) {
     }
     setSubmitting(true);
     try {
-      await login(email.trim(), password);
+      const result = await login(email.trim(), password);
+      console.log('✅ Login completed successfully, user:', result?._id || result?.email);
+      // Navigation will happen automatically via AppNavigator when user state updates
     } catch (e) {
-      console.log(e);
-      Alert.alert('Login failed', e?.response?.data?.message || 'Check credentials and try again');
+      console.error('❌ Login error:', e);
+      const errorMessage = e?.message || e?.response?.data?.message || 'Check credentials and try again';
+      Alert.alert('Login failed', errorMessage);
     } finally {
       setSubmitting(false);
     }

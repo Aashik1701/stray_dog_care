@@ -7,27 +7,24 @@ import { useAuth } from '../contexts/AuthProvider';
 
 export default function HomeScreen({ navigation }) {
   const [stats, setStats] = useState(null);
-  const [me, setMe] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const { logout, user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    // Wait for auth to be initialized so demo token is set before API calls
-    if (!authLoading) {
+    // Wait for auth to be initialized and user to be available
+    if (!authLoading && user) {
       fetchData();
     }
-  }, [authLoading]);
+  }, [authLoading, user]);
 
   const fetchData = async () => {
     try {
-      const [meRes, statsRes] = await Promise.all([
-        api.get('/auth/me'),
-        api.get('/dogs/stats')
-      ]);
-      setMe(meRes.data.data);
+      // Only fetch stats, use user from auth context instead of fetching /auth/me
+      const statsRes = await api.get('/dogs/stats');
       setStats(statsRes.data.data);
     } catch (e) {
       console.log('Error fetching data:', e);
+      // Don't clear user state on error - just log it
     }
   };
 
@@ -71,7 +68,7 @@ export default function HomeScreen({ navigation }) {
         <View>
           <Text style={styles.greeting}>Welcome back!</Text>
           <Text style={styles.subtitle}>
-            {me?.profile?.firstName} {me?.profile?.lastName}
+            {user?.profile?.firstName} {user?.profile?.lastName}
           </Text>
         </View>
         <TouchableOpacity style={styles.profileButton} onPress={logout}>
@@ -152,15 +149,15 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.profileHeader}>
             <View style={styles.profileAvatar}>
               <Text style={styles.profileInitial}>
-                {me?.profile?.firstName?.charAt(0)}{me?.profile?.lastName?.charAt(0)}
+                {user?.profile?.firstName?.charAt(0)}{user?.profile?.lastName?.charAt(0)}
               </Text>
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>
-                {me?.profile?.firstName} {me?.profile?.lastName}
+                {user?.profile?.firstName} {user?.profile?.lastName}
               </Text>
-              <Text style={styles.profileEmail}>{me?.email}</Text>
-              <Text style={styles.profileRole}>{me?.role?.replace('_', ' ')}</Text>
+              <Text style={styles.profileEmail}>{user?.email}</Text>
+              <Text style={styles.profileRole}>{user?.role?.replace('_', ' ')}</Text>
             </View>
           </View>
         </View>

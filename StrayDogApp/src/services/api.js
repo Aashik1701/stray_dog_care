@@ -3,28 +3,44 @@ import Constants from 'expo-constants';
 
 function resolveBaseURL() {
   const envUrl = process.env.EXPO_PUBLIC_API_URL || process.env.API_URL;
-  if (envUrl) return envUrl.replace(/\/$/, '');
+  if (envUrl) {
+    const url = envUrl.replace(/\/$/, '');
+    console.log('🌐 API URL from env:', url);
+    return url;
+  }
   // Try to get from Expo config
   try {
     const apiUrl = Constants.expoConfig?.extra?.apiUrl;
-    if (apiUrl) return apiUrl.replace(/\/$/, '');
+    if (apiUrl) {
+      const url = apiUrl.replace(/\/$/, '');
+      console.log('🌐 API URL from app.json:', url);
+      return url;
+    }
   } catch {}
   try {
     const hostUri = Constants.expoConfig?.hostUri || Constants?.manifest2?.extra?.expoClient?.hostUri;
     if (hostUri && hostUri.includes(':')) {
       const host = hostUri.split(':')[0];
-      return `http://${host}:3000`;
+      const url = `http://${host}:3000`;
+      console.log('🌐 API URL from hostUri:', url);
+      return url;
     }
   } catch {}
 
   // Fallback for web/dev
-  return 'http://localhost:3000';
+  const fallback = 'http://localhost:3000';
+  console.warn('⚠️ Using fallback API URL:', fallback);
+  console.warn('💡 To fix: Set EXPO_PUBLIC_API_URL env var or apiUrl in app.json');
+  return fallback;
 }
 
+const baseURL = resolveBaseURL();
 const api = axios.create({
-  baseURL: `${resolveBaseURL()}/api`,
+  baseURL: `${baseURL}/api`,
   timeout: 15000,
 });
+
+console.log('🔗 API Base URL:', api.defaults.baseURL);
 
 let authToken = null;
 export const setAuthToken = (token) => {

@@ -139,12 +139,24 @@ const login = asyncHandler(async (req, res) => {
       });
     }
 
-    // Find user by email or username
+    // Normalize email (lowercase and trim) for lookup
+    // Emails are stored lowercase in the database due to schema setting
+    const normalizedEmail = String(email).toLowerCase().trim();
+    const trimmedUsername = String(email).trim();
+
+    // Find user by email or username (try both normalized email and trimmed username)
     const user = await User.findOne({
-      $or: [{ email }, { username: email }]
+      $or: [
+        { email: normalizedEmail },
+        { username: trimmedUsername }
+      ]
     }).populate('organization', 'name type');
 
     if (!user) {
+      // Log in development to help debug
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ Login failed: User not found for:', { email: normalizedEmail, username: trimmedUsername });
+      }
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -162,6 +174,10 @@ const login = asyncHandler(async (req, res) => {
     // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
+      // Log in development to help debug
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ Login failed: Invalid password for user:', user.email || user.username);
+      }
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -181,6 +197,11 @@ const login = asyncHandler(async (req, res) => {
     const userResponse = user.toObject();
     delete userResponse.password;
     delete userResponse.loginHistory;
+
+    // Log successful login in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Login successful for user:', user.email || user.username, 'Role:', user.role);
+    }
 
     res.json({
       success: true,
