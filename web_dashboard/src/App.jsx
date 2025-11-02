@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import DogsPage from './pages/DogsPage';
 import UsersPage from './pages/UsersPage';
 import LoginPage from './pages/LoginPage';
+import MapPage from './pages/MapPage';
 import RegisterPage from './pages/RegisterPage';
 
 // Protected App Routes Component
@@ -42,7 +43,7 @@ const AppRoutes = () => {
       <Route path="/" element={<DashboardLayout />}>
         <Route index element={<Dashboard />} />
         <Route path="dogs" element={<DogsPage />} />
-        <Route path="map" element={<div className="p-6 text-center text-gray-500">Map view coming soon...</div>} />
+        <Route path="map" element={<MapPage />} />
         <Route 
           path="analytics" 
           element={

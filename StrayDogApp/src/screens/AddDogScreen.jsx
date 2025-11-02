@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image, FlatList, Switch, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image, FlatList, Switch, ActivityIndicator, Platform } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
+
+// Voice is a native module requiring dev client
+let Voice = null;
+try {
+  Voice = require('@react-native-voice/voice').default;
+} catch (e) {
+  console.log('Voice module not available - requires dev client build');
+}
 
 export default function AddDogScreen({ navigation }) {
   const [dogData, setDogData] = useState({ size: '', color: '', gender: '', notes: '', zone: '' });
@@ -16,6 +24,23 @@ export default function AddDogScreen({ navigation }) {
   const [nlpLoading, setNlpLoading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [speechRecognized, setSpeechRecognized] = useState('');
+  const [speechError, setSpeechError] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('en-IN');
+  
+  const supportedLanguages = [
+    { code: 'en-IN', name: 'English (India)' },
+    { code: 'hi-IN', name: 'हिंदी' },
+    { code: 'bn-IN', name: 'বাংলা' },
+    { code: 'te-IN', name: 'తెలుగు' },
+    { code: 'mr-IN', name: 'मराठी' },
+    { code: 'ta-IN', name: 'தமிழ்' },
+    { code: 'gu-IN', name: 'ગુજરાતી' },
+    { code: 'kn-IN', name: 'ಕನ್ನಡ' },
+    { code: 'ml-IN', name: 'മലയാളം' },
+    { code: 'pa-IN', name: 'ਪੰਜਾਬੀ' },
+  ];
 
   useEffect(() => {
     (async () => {
@@ -28,7 +53,72 @@ export default function AddDogScreen({ navigation }) {
         // ignore
       }
     })();
+
+    // Setup Voice recognition only if available
+    if (Voice) {
+      Voice.onSpeechStart = onSpeechStart;
+      Voice.onSpeechEnd = onSpeechEnd;
+      Voice.onSpeechResults = onSpeechResults;
+      Voice.onSpeechError = onSpeechError;
+
+      return () => {
+        Voice.destroy().then(Voice.removeAllListeners);
+      };
+    }
   }, []);
+
+  const onSpeechStart = () => {
+    setIsRecording(true);
+    setSpeechError('');
+  };
+
+  const onSpeechEnd = () => {
+    setIsRecording(false);
+  };
+
+  const onSpeechResults = (e) => {
+    if (e.value && e.value.length > 0) {
+      const recognizedText = e.value[0];
+      setSpeechRecognized(recognizedText);
+      // Append recognized text to existing notes
+      setDogData(prev => ({
+        ...prev,
+        notes: prev.notes ? prev.notes + ' ' + recognizedText : recognizedText
+      }));
+    }
+  };
+
+  const onSpeechError = (e) => {
+    setIsRecording(false);
+    setSpeechError(e.error);
+    Alert.alert('Speech Recognition Error', e.error || 'Failed to recognize speech');
+  };
+
+  const startRecording = async () => {
+    if (!Voice) {
+      Alert.alert(
+        'Voice Not Available',
+        'Speech recognition requires a development build. Please run: npx expo prebuild && npx expo run:ios (or run:android)',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    try {
+      await Voice.start(selectedLanguage);
+    } catch (error) {
+      console.error('Speech recognition error:', error);
+      Alert.alert('Error', 'Failed to start speech recognition');
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!Voice) return;
+    try {
+      await Voice.stop();
+    } catch (error) {
+      console.error('Speech stop error:', error);
+    }
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -95,7 +185,7 @@ export default function AddDogScreen({ navigation }) {
           ]
         );
       } else {
-        Alert.alert('AI unavailable', errorMessage + ' You can still save without AI.');
+        Alert.alert('AI unavailable', `${errorMessage} You can still save without AI.`);
       }
     } finally {
       setPreviewLoading(false);
@@ -266,7 +356,67 @@ export default function AddDogScreen({ navigation }) {
             </ScrollView>
           </View>
         )}
-        <TextInput placeholder="Notes" style={[styles.input, { height: 100 }]} value={dogData.notes} onChangeText={(t)=>setDogData(s=>({ ...s, notes: t }))} multiline />
+        {/* Language Selector */}
+        <View style={styles.languageSelector}>
+          <Text style={styles.languageLabel}>Speech Language:</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.languageScroll}>
+            {supportedLanguages.map((lang) => (
+              <TouchableOpacity
+                key={lang.code}
+                style={[
+                  styles.languageChip,
+                  selectedLanguage === lang.code && styles.languageChipSelected
+                ]}
+                onPress={() => setSelectedLanguage(lang.code)}
+              >
+                <Text style={[
+                  styles.languageChipText,
+                  selectedLanguage === lang.code && styles.languageChipTextSelected
+                ]}>
+                  {lang.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+        <View style={styles.notesContainer}>
+          <TextInput 
+            placeholder="Notes about the dog (tap mic to speak)" 
+            style={[styles.notesInput, { height: 100 }]} 
+            value={dogData.notes} 
+            onChangeText={(t)=>setDogData(s=>({ ...s, notes: t }))} 
+            multiline 
+            textAlignVertical="top"
+          />
+          <TouchableOpacity 
+            style={[styles.micButton, isRecording && styles.micButtonRecording]}
+            onPress={isRecording ? stopRecording : startRecording}
+            disabled={Platform.OS === 'web' || !Voice}
+          >
+            <Ionicons 
+              name={isRecording ? "stop-circle" : "mic"} 
+              size={24} 
+              color={isRecording ? "#ef4444" : (!Voice ? "#9ca3af" : "#3b82f6")} 
+            />
+          </TouchableOpacity>
+        </View>
+        {isRecording && (
+          <View style={styles.recordingIndicator}>
+            <ActivityIndicator size="small" color="#ef4444" />
+            <Text style={styles.recordingText}>Listening... Speak now</Text>
+          </View>
+        )}
+        {!Voice && Platform.OS !== 'web' && (
+          <View style={styles.voiceUnavailableNotice}>
+            <Ionicons name="information-circle" size={16} color="#f59e0b" />
+            <Text style={styles.voiceUnavailableText}>
+              Voice requires dev build: npx expo prebuild
+            </Text>
+          </View>
+        )}
+        {speechError ? (
+          <Text style={styles.errorText}>Speech Error: {speechError}</Text>
+        ) : null}
         {aiAutofill && (
           <TouchableOpacity style={styles.previewButton} onPress={handlePreview} disabled={previewLoading}>
             {previewLoading ? (
@@ -291,8 +441,14 @@ export default function AddDogScreen({ navigation }) {
             </View>
             <Text style={styles.previewText}>{preview.summary}</Text>
             <View style={styles.previewMeta}>
-              <View style={styles.metaItem}><Text style={styles.metaKey}>Category:</Text><Text style={styles.metaVal}>{preview.category}</Text></View>
-              <View style={styles.metaItem}><Text style={styles.metaKey}>Sentiment:</Text><Text style={styles.metaVal}>{preview.sentiment}</Text></View>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaKey}>Category: </Text>
+                <Text style={styles.metaVal}>{preview.category}</Text>
+              </View>
+              <View style={styles.metaItem}>
+                <Text style={styles.metaKey}>Sentiment: </Text>
+                <Text style={styles.metaVal}>{preview.sentiment}</Text>
+              </View>
             </View>
             {!!(preview.entities?.symptoms?.length) && (
               <View style={{ marginTop: 8 }}>
@@ -385,6 +541,22 @@ const styles = StyleSheet.create({
   },
   locationText: { fontSize: 14, color: '#166534' },
   input: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 10, marginBottom: 8, backgroundColor: '#fff' },
+  languageSelector: { marginBottom: 12 },
+  languageLabel: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 6 },
+  languageScroll: { marginBottom: 4 },
+  languageChip: { backgroundColor: '#f3f4f6', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, marginRight: 8, borderWidth: 1, borderColor: '#e5e7eb' },
+  languageChipSelected: { backgroundColor: '#dbeafe', borderColor: '#3b82f6' },
+  languageChipText: { fontSize: 12, color: '#374151', fontWeight: '600' },
+  languageChipTextSelected: { color: '#1d4ed8' },
+  notesContainer: { flexDirection: 'row', position: 'relative', marginBottom: 8 },
+  notesInput: { flex: 1, borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 10, paddingRight: 50, backgroundColor: '#fff' },
+  micButton: { position: 'absolute', right: 10, top: 10, padding: 8, borderRadius: 20, backgroundColor: '#f0f9ff' },
+  micButtonRecording: { backgroundColor: '#fee2e2' },
+  recordingIndicator: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8, padding: 8, backgroundColor: '#fee2e2', borderRadius: 8 },
+  recordingText: { fontSize: 14, color: '#dc2626', fontWeight: '600' },
+  voiceUnavailableNotice: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8, padding: 8, backgroundColor: '#fef3c7', borderRadius: 8 },
+  voiceUnavailableText: { fontSize: 12, color: '#92400e', flex: 1 },
+  errorText: { fontSize: 12, color: '#dc2626', marginBottom: 8 },
   submitButton: { backgroundColor: '#10b981', padding: 14, borderRadius: 10, margin: 16, alignItems: 'center' },
   submitText: { color: '#fff', fontWeight: '700' }
 });
