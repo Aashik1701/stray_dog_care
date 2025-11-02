@@ -35,10 +35,23 @@ class NLPService {
     try {
       const url = `${NLP_SERVICE_URL}/health`;
       const { data } = await axios.get(url, { timeout: Math.min(NLP_TIMEOUT, 3000) });
+      // If health check succeeds and circuit is open, reset it
+      if (this._circuitOpen() && data?.status === 'ok') {
+        console.log('🔄 NLP service is healthy, resetting circuit breaker');
+        this._failureCount = 0;
+        this._circuitOpenUntil = 0;
+      }
       return { reachable: true, raw: data };
     } catch (e) {
       return { reachable: false, error: e?.message };
     }
+  }
+
+  // Method to manually reset circuit breaker
+  resetCircuit() {
+    console.log('🔄 Manually resetting NLP circuit breaker');
+    this._failureCount = 0;
+    this._circuitOpenUntil = 0;
   }
 
   _circuitOpen() {
@@ -48,9 +61,19 @@ class NLPService {
   async _requestWithRetry(fn, opName = 'nlp') {
     if (!this.enabled) return null;
     if (this._circuitOpen()) {
-      const err = new Error('NLP circuit open');
-      err.code = 'NLP_CIRCUIT_OPEN';
-      throw err;
+      // Before rejecting, check if service is actually healthy now
+      const health = await this.checkHealth();
+      if (health.reachable) {
+        console.log('✅ NLP service recovered, resetting circuit and proceeding with request');
+        // Force reset since service is reachable
+        this.resetCircuit();
+        // Now proceed with the request (circuit is closed)
+      } else {
+        const err = new Error('NLP service unavailable (circuit open). The NLP service may not be running.');
+        err.code = 'NLP_CIRCUIT_OPEN';
+        err.serviceUnavailable = true;
+        throw err;
+      }
     }
 
     let attempt = 0;
@@ -108,6 +131,18 @@ class NLPService {
       return data;
     };
     return this._requestWithRetry(exec, 'findDuplicates');
+  }
+
+  async predict(text = 'This is a great day!') {
+    const url = `${NLP_SERVICE_URL}/predict`;
+    const exec = async () => {
+      const { data } = await axios.get(url, {
+        params: { text },
+        timeout: Math.min(NLP_TIMEOUT, 5000),
+      });
+      return data;
+    };
+    return this._requestWithRetry(exec, 'predict');
   }
 }
 

@@ -4,8 +4,28 @@ from typing import Optional, List
 from transformers import pipeline
 from functools import lru_cache
 import re
+import os
 
-app = FastAPI(title="Stray Dog NLP Service", version="0.1.0")
+try:
+    import torch
+    HAS_TORCH = True
+except Exception:
+    torch = None  # type: ignore
+    HAS_TORCH = False
+
+app = FastAPI(title="Stray Dog NLP Service", version="0.2.0")
+
+# Compute device for acceleration
+USE_CUDA = bool(int(os.environ.get("USE_CUDA", "1")))
+DEVICE = 0 if (HAS_TORCH and USE_CUDA and torch.cuda.is_available()) else -1
+DEVICE_NAME = (
+    f"cuda:{torch.cuda.current_device()}"
+    if (HAS_TORCH and DEVICE == 0)
+    else "cpu"
+)
+
+_MODELS_WARMED = False
+
 
 class AnalyzePayload(BaseModel):
     text: str
@@ -18,7 +38,33 @@ class DuplicatePayload(BaseModel):
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "device": DEVICE_NAME,
+        "cuda": (
+            bool(HAS_TORCH and torch.cuda.is_available())
+            if HAS_TORCH
+            else False
+        ),
+        "warmed": _MODELS_WARMED,
+        "version": app.version,
+    }
+
+
+@app.get("/predict")
+def predict(text: Optional[str] = "This is a great day!"):
+    """Lightweight endpoint to verify inference pipeline works.
+    Runs sentiment over provided text and returns label + device info.
+    """
+    clf = get_sentiment_pipeline()
+    out = clf(text, truncation=True)[0]
+    return {
+        "ok": True,
+        "model": "distilbert-sst2",
+        "label": out.get("label"),
+        "score": float(out.get("score", 0.0)),
+        "device": DEVICE_NAME,
+    }
 
 
 @app.post("/api/nlp/analyze-report")
@@ -109,20 +155,27 @@ def get_sentiment_pipeline():
     return pipeline(
         "sentiment-analysis",
         model="distilbert-base-uncased-finetuned-sst-2-english",
+        device=DEVICE,
     )
 
 
 @lru_cache(maxsize=1)
 def get_zero_shot_pipeline():
     return pipeline(
-        "zero-shot-classification", model="facebook/bart-large-mnli"
+        "zero-shot-classification",
+        model="facebook/bart-large-mnli",
+        device=DEVICE,
     )
 
 
 @lru_cache(maxsize=1)
 def get_summarizer_pipeline():
     # smaller, faster summarizer than BART-large
-    return pipeline("summarization", model="sshleifer/distilbart-cnn-12-6")
+    return pipeline(
+        "summarization",
+        model="sshleifer/distilbart-cnn-12-6",
+        device=DEVICE,
+    )
 
 
 @lru_cache(maxsize=1)
@@ -132,6 +185,7 @@ def get_ner_pipeline():
         "token-classification",
         model="dslim/bert-base-NER",
         aggregation_strategy="simple",
+        device=DEVICE,
     )
 
 
@@ -170,3 +224,36 @@ def extract_entities(text: str, ner) -> dict:
         "symptoms": symptoms,
         "dates": [],
     }
+
+
+@app.on_event("startup")
+def warm_models():
+    """Load models at process start and perform a tiny warm-up call
+    to avoid first-request latency.
+    """
+    global _MODELS_WARMED
+    try:
+        s = get_sentiment_pipeline()
+        z = get_zero_shot_pipeline()
+        sm = get_summarizer_pipeline()
+        n = get_ner_pipeline()
+
+        # Tiny warm-up calls (fast and cached by HF)
+        _ = s("ok")
+        _ = z(
+            "ok",
+            candidate_labels=["general sighting", "health concern"],
+            multi_label=False,
+        )
+        _ = sm(
+            "Short text for warm up.",
+            max_length=20,
+            min_length=5,
+            do_sample=False,
+        )
+        _ = n("Bangalore is a city.")
+
+        _MODELS_WARMED = True
+        print(f"[NLP] Models warmed on device: {DEVICE_NAME}")
+    except Exception as e:
+        print(f"[NLP] Warm-up failed: {e}")

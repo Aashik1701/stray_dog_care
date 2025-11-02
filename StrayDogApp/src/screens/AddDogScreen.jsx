@@ -76,7 +76,27 @@ export default function AddDogScreen({ navigation }) {
       setPreview(data?.data || null);
     } catch (e) {
       console.log('AI preview failed', e?.response?.data || e.message);
-      Alert.alert('AI unavailable', e?.response?.data?.message || 'Could not analyze at the moment. You can still save without AI.');
+      const errorMessage = e?.response?.data?.message || e?.message || 'Could not analyze at the moment.';
+      
+      // Check if it's a circuit open or service unavailable error
+      const isServiceUnavailable = errorMessage.includes('circuit open') || 
+                                   errorMessage.includes('service unavailable') ||
+                                   errorMessage.includes('not be running') ||
+                                   errorMessage.includes('not running') ||
+                                   e?.response?.data?.code === 'NLP_CIRCUIT_OPEN';
+      
+      if (isServiceUnavailable) {
+        Alert.alert(
+          'AI Service Unavailable', 
+          'The NLP service is not running or unavailable. Please ensure the NLP service is started, or continue without AI features.',
+          [
+            { text: 'Continue without AI', style: 'cancel' },
+            { text: 'Try Again', onPress: () => setTimeout(() => handlePreview(), 500) }
+          ]
+        );
+      } else {
+        Alert.alert('AI unavailable', errorMessage + ' You can still save without AI.');
+      }
     } finally {
       setPreviewLoading(false);
     }
