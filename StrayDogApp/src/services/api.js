@@ -135,10 +135,24 @@ const getMockDogsData = () => ([
   }
 ]);
 
+// Demo mode toggle (explicit only)
+const DEMO_MODE = (() => {
+  try {
+    const v = Constants.expoConfig?.extra?.demoMode;
+    if (typeof v === 'boolean') return v;
+    if (typeof v === 'string') return v === 'true';
+  } catch {}
+  if (typeof process !== 'undefined') {
+    const v = process.env?.EXPO_PUBLIC_DEMO_MODE || process.env?.DEMO_MODE;
+    if (typeof v === 'string') return v === 'true';
+  }
+  return false;
+})();
+
 // Check if token is a demo token
 const isDemoToken = (token) => token && token.startsWith('demo-token');
-// Heuristic demo mode: either we have a demo token, or auth isn't set yet during app bootstrap
-const isDemoMode = () => isDemoToken(authToken) || !authToken;
+// Only mock when explicitly in demo mode and using a demo token
+const isDemoMode = () => DEMO_MODE && isDemoToken(authToken);
 
 api.interceptors.request.use((config) => {
   if (authToken) {
@@ -151,7 +165,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-  // If we're in demo mode and the request failed, return mock data for known endpoints
+  // If explicitly in demo mode and using demo token, return mock data for known endpoints
   if (isDemoMode()) {
       const { url, method, data } = error.config;
       

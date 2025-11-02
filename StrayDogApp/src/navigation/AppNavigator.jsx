@@ -6,6 +6,9 @@ import { Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthProvider';
 import LoginScreen from '../screens/LoginScreen';
+import RegisterScreen from '../screens/RegisterScreen';
+import ForgotPasswordScreen from '../screens/ForgotPasswordScreen';
+import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
@@ -13,6 +16,7 @@ import AddDogScreen from '../screens/AddDogScreen';
 import DogsScreen from '../screens/DogsScreen';
 import DogDetailScreen from '../screens/DogDetailScreen';
 import SplashScreen from '../screens/SplashScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -65,9 +69,15 @@ export default function AppNavigator() {
           <>
             <Stack.Screen name="Main" component={TabNavigator} />
             <Stack.Screen name="DogDetail" component={DogDetailScreen} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
           </>
         ) : (
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <>
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>

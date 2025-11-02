@@ -103,6 +103,13 @@ export default function HomeScreen({ navigation }) {
           onPress={() => navigation.navigate('Dogs')}
           color="#8b5cf6"
         />
+        <QuickActionCard
+          icon="key-outline"
+          title="Change Password"
+          subtitle="Update your account password"
+          onPress={() => navigation.navigate('ChangePassword')}
+          color="#f59e0b"
+        />
       </View>
 
       {/* Statistics */}

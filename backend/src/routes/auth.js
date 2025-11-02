@@ -6,7 +6,10 @@ const {
   updateMe,
   changePassword,
   logout,
-  refreshToken
+  refreshToken,
+  checkAvailability,
+  forgotPassword,
+  resetPassword
 } = require('../controllers/authController');
 const { auth } = require('../middleware/auth');
 
@@ -15,6 +18,9 @@ const router = express.Router();
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
+router.get('/availability', checkAvailability);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
 // Protected routes
 router.use(auth); // Apply auth middleware to all routes below

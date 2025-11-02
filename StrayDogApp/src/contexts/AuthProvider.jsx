@@ -13,56 +13,35 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     (async () => {
       try {
-        // Check if user was previously logged in
+        // Restore session if possible
         const stored = await AsyncStorage.getItem('auth');
         if (stored) {
           const parsed = JSON.parse(stored);
-          // Validate token expiry
           if (parsed?.token && !isExpired(parsed.token)) {
             setToken(parsed.token);
             setAuthToken(parsed.token);
-            setUser(parsed.user);
+            // Validate token by fetching profile
+            try {
+              const me = await api.get('/auth/me');
+              setUser(me.data.data);
+            } catch {
+              // Token invalid on server, clear
+              await AsyncStorage.removeItem('auth');
+              setToken(null);
+              setAuthToken(null);
+              setUser(null);
+            }
           } else if (parsed?.token) {
-            // Expired -> clear and auto-login with demo user
+            // Expired -> clear
             await AsyncStorage.removeItem('auth');
-            await autoLogin();
           }
-        } else {
-          // No stored auth, auto-login with demo user
-          await autoLogin();
         }
       } catch {
-        // On error, auto-login with demo user
-        await autoLogin();
+        // Ignore and fall through to unauthenticated state
       }
       setLoading(false);
     })();
   }, []);
-
-  // Auto-login function for demo purposes
-  const autoLogin = async () => {
-    const demoUser = {
-      _id: 'demo-user-123',
-      username: 'demo_user',
-      email: 'demo@straydogcare.com',
-      role: 'field_worker',
-      permissions: ['create_dog', 'edit_dog'],
-      profile: {
-        firstName: 'Demo',
-        lastName: 'User',
-        phoneNumber: '1234567890'
-      },
-      isActive: true,
-      isEmailVerified: true
-    };
-
-    const demoToken = 'demo-token-' + Date.now(); // Mock token
-
-    setToken(demoToken);
-    setUser(demoUser);
-    setAuthToken(demoToken);
-    await AsyncStorage.setItem('auth', JSON.stringify({ token: demoToken, user: demoUser }));
-  };
 
   // Setup timer to auto-logout near expiry
   useEffect(() => {
@@ -79,43 +58,33 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const login = async (email, password) => {
-    // For demo purposes, always succeed with the demo user
-    // You can still call the real API if needed, but for now we'll use the demo user
-    try {
-      // Try real login first
-      const res = await api.post('/auth/login', { email, password });
-      const { token: t, user: u } = res.data.data;
-      if (isExpired(t)) throw new Error('Received expired token');
-      setToken(t);
-      setUser(u);
-      setAuthToken(t);
-      await AsyncStorage.setItem('auth', JSON.stringify({ token: t, user: u }));
-      return u;
-    } catch (error) {
-      // If real login fails, fall back to demo user
-      console.log('Real login failed, using demo user:', error.message);
-      const demoUser = {
-        _id: 'demo-user-' + Date.now(),
-        username: email || 'demo_user',
-        email: email || 'demo@straydogcare.com',
-        role: 'field_worker',
-        permissions: ['create_dog', 'edit_dog'],
-        profile: {
-          firstName: 'Demo',
-          lastName: 'User',
-          phoneNumber: '1234567890'
-        },
-        isActive: true,
-        isEmailVerified: true
-      };
+    const res = await api.post('/auth/login', { email, password });
+    const { token: t, user: u } = res.data.data;
+    if (isExpired(t)) throw new Error('Received expired token');
+    setToken(t);
+    setUser(u);
+    setAuthToken(t);
+    await AsyncStorage.setItem('auth', JSON.stringify({ token: t, user: u }));
+    return u;
+  };
 
-      const demoToken = 'demo-token-' + Date.now();
-      setToken(demoToken);
-      setUser(demoUser);
-      setAuthToken(demoToken);
-      await AsyncStorage.setItem('auth', JSON.stringify({ token: demoToken, user: demoUser }));
-      return demoUser;
-    }
+  const register = async ({ username, email, password, firstName, lastName, phoneNumber, role, organizationId }) => {
+    const res = await api.post('/auth/register', {
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      phoneNumber,
+      role,
+      organizationId
+    });
+    const { token: t, user: u } = res.data.data;
+    setToken(t);
+    setUser(u);
+    setAuthToken(t);
+    await AsyncStorage.setItem('auth', JSON.stringify({ token: t, user: u }));
+    return u;
   };
 
   const logout = async () => {
@@ -125,7 +94,7 @@ export function AuthProvider({ children }) {
     await AsyncStorage.removeItem('auth');
   };
 
-  const value = useMemo(() => ({ user, token, loading, login, logout }), [user, token, loading]);
+  const value = useMemo(() => ({ user, token, loading, login, register, logout }), [user, token, loading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

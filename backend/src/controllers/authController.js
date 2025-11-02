@@ -26,16 +26,39 @@ const register = asyncHandler(async (req, res) => {
     } = req.body;
 
     // Validate required fields
-    if (!username || !email || !password || !firstName || !lastName || !phoneNumber) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
+    const missing = [];
+    if (!username) missing.push('username');
+    if (!email) missing.push('email');
+    if (!password) missing.push('password');
+    if (!firstName) missing.push('firstName');
+    if (!lastName) missing.push('lastName');
+    if (!phoneNumber) missing.push('phoneNumber');
+    if (missing.length) {
+      return res.status(400).json({ success: false, message: 'All fields are required', missing });
+    }
+
+    // Normalize inputs
+    const normalizedPhone = String(phoneNumber).replace(/\D/g, '');
+    const normalizedEmail = String(email).toLowerCase().trim();
+    const trimmedUsername = String(username).trim();
+
+    // Additional validations (mirror schema to give clearer errors)
+    if (trimmedUsername.length < 3) {
+      return res.status(400).json({ success: false, message: 'Username must be at least 3 characters' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid email' });
+    }
+    if (!/^\d{10}$/.test(normalizedPhone)) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid 10-digit phone number' });
     }
 
     // Check if user already exists
     const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
+      $or: [{ email: normalizedEmail }, { username: trimmedUsername }]
     });
 
     if (existingUser) {
@@ -47,13 +70,13 @@ const register = asyncHandler(async (req, res) => {
 
     // Create user
     const userData = {
-      username,
-      email,
+      username: trimmedUsername,
+      email: normalizedEmail,
       password,
       profile: {
         firstName,
         lastName,
-        phoneNumber
+        phoneNumber: normalizedPhone
       },
       role
     };
@@ -329,5 +352,82 @@ module.exports = {
   updateMe,
   changePassword,
   logout,
-  refreshToken
+  refreshToken,
+  // Check availability for username/email
+  checkAvailability: asyncHandler(async (req, res) => {
+    try {
+      const { username, email } = req.query;
+      const result = { username: undefined, email: undefined };
+
+      if (username) {
+        const existingUsername = await User.findOne({ username: String(username).trim() });
+        result.username = !existingUsername;
+      }
+      if (email) {
+        const existingEmail = await User.findOne({ email: String(email).toLowerCase().trim() });
+        result.email = !existingEmail;
+      }
+
+      return res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Error checking availability', error: error.message });
+    }
+  }),
+  // Request password reset
+  forgotPassword: asyncHandler(async (req, res) => {
+    try {
+      const { email } = req.body || {};
+      if (!email) {
+        return res.status(400).json({ success: false, message: 'Email is required' });
+      }
+      const normalizedEmail = String(email).toLowerCase().trim();
+      const user = await User.findOne({ email: normalizedEmail });
+      if (!user) {
+        // Do not leak user existence
+        return res.json({ success: true, message: 'If an account exists, a reset link has been sent' });
+      }
+
+      // Generate simple reset token (could be crypto randomBytes + hash)
+      const token = require('crypto').randomBytes(24).toString('hex');
+      user.passwordResetToken = token;
+      user.passwordResetExpires = new Date(Date.now() + 1000 * 60 * 15); // 15 minutes
+      await user.save();
+
+      // In production, send email; in development, return token for convenience
+      const resp = { success: true, message: 'Password reset requested' };
+      if (process.env.NODE_ENV !== 'production') {
+        resp.token = token;
+        resp.expiresAt = user.passwordResetExpires;
+      }
+      return res.json(resp);
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Error requesting password reset', error: error.message });
+    }
+  }),
+  // Reset password using token
+  resetPassword: asyncHandler(async (req, res) => {
+    try {
+      const { token, newPassword } = req.body || {};
+      if (!token || !newPassword) {
+        return res.status(400).json({ success: false, message: 'Token and newPassword are required' });
+      }
+      if (String(newPassword).length < 6) {
+        return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+      }
+
+      const user = await User.findOne({ passwordResetToken: token });
+      if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+        return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
+      }
+
+      user.password = newPassword;
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save();
+
+      return res.json({ success: true, message: 'Password has been reset successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: 'Error resetting password', error: error.message });
+    }
+  })
 };
