@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion as Motion, AnimatePresence } from 'framer-motion';
 import { 
   MagnifyingGlassIcon, 
@@ -9,10 +9,15 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import api from '../../services/api';
+import socketService from '../../services/socket';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function TopBar({ stats }) {
   const [searchFocused, setSearchFocused] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const { user, token } = useAuth();
+  const notificationsRef = useRef([]);
 
   const quickStats = [
     {
@@ -35,24 +40,93 @@ export default function TopBar({ stats }) {
     }
   ];
 
-  const notifications = [
-    {
-      id: 1,
-      title: 'New dog registered',
-      message: 'Max needs immediate attention',
-      time: '2 min ago',
-      type: 'urgent'
-    },
-    {
-      id: 2,
-      title: 'Vaccination reminder',
-      message: '5 dogs due for vaccination',
-      time: '1 hour ago',
-      type: 'info'
+  // Format time ago
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    const diffMs = now - new Date(date);
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  };
+
+  // Add notification
+  const addNotification = (alert) => {
+    const notification = {
+      id: alert.alertId || `alert-${Date.now()}`,
+      title: alert.title || 'New Alert',
+      message: alert.message || alert.nlpAnalysis?.summary || 'No details available',
+      time: formatTimeAgo(alert.createdAt || new Date()),
+      type: alert.priority === 'critical' || alert.urgencyScore >= 0.85 ? 'critical' : 
+            alert.priority === 'high' || alert.urgencyScore >= 0.7 ? 'urgent' : 'info',
+      alert: alert,
+      createdAt: alert.createdAt || new Date()
+    };
+    
+    notificationsRef.current = [notification, ...notificationsRef.current].slice(0, 50); // Keep last 50
+    setNotifications([...notificationsRef.current]);
+    
+    // Browser notification for critical alerts
+    if (notification.type === 'critical' && 'Notification' in window && Notification.permission === 'granted') {
+      new Notification(notification.title, {
+        body: notification.message,
+        icon: '/favicon.png',
+        badge: '/favicon.png',
+        tag: notification.id,
+        requireInteraction: true
+      });
     }
-  ];
+  };
 
   const [nlpStatus, setNlpStatus] = useState({ enabled: null });
+  
+  // Socket.io connection for real-time alerts
+  useEffect(() => {
+    if (!token || !user) return;
+
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    // Connect to Socket.io
+    const organizationId = user.organization?._id || user.organization;
+    const zones = user.assignedZones || [];
+    
+    socketService.connect(token, organizationId, zones);
+
+    // Subscribe to alert events
+    const unsubscribeAlertNew = socketService.on('alert.new', (alert) => {
+      addNotification(alert);
+    });
+
+    const unsubscribeAlertCritical = socketService.on('alert.critical', (alert) => {
+      addNotification(alert);
+    });
+
+    const unsubscribeAlertHigh = socketService.on('alert.high_priority', (alert) => {
+      addNotification(alert);
+    });
+
+    const unsubscribeAlertZone = socketService.on('alert.zone', (alert) => {
+      addNotification(alert);
+    });
+
+    // Cleanup
+    return () => {
+      unsubscribeAlertNew();
+      unsubscribeAlertCritical();
+      unsubscribeAlertHigh();
+      unsubscribeAlertZone();
+      socketService.disconnect();
+    };
+  }, [token, user]);
+
+  // Fetch NLP status
   useEffect(() => {
     let mounted = true;
     const fetchStatus = async () => {
@@ -234,11 +308,13 @@ export default function TopBar({ stats }) {
                           >
                             <div className="flex items-start space-x-3">
                               <div className={`flex-shrink-0 p-2 rounded-lg ${
-                                notification.type === 'urgent' 
+                                notification.type === 'critical' 
+                                  ? 'bg-red-100 text-red-600' 
+                                  : notification.type === 'urgent'
                                   ? 'bg-danger-50 text-danger-600' 
                                   : 'bg-primary-50 text-primary-600'
                               }`}>
-                                {notification.type === 'urgent' ? (
+                                {notification.type === 'critical' || notification.type === 'urgent' ? (
                                   <ExclamationTriangleIcon className="w-4 h-4" aria-hidden="true" />
                                 ) : (
                                   <HeartIcon className="w-4 h-4" aria-hidden="true" />

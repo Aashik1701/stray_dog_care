@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image, FlatList, Switch, ActivityIndicator, Platform } from 'react-native';
+import { Audio } from 'expo-av';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -28,6 +29,8 @@ export default function AddDogScreen({ navigation }) {
   const [speechRecognized, setSpeechRecognized] = useState('');
   const [speechError, setSpeechError] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('en-IN');
+  const [micGranted, setMicGranted] = useState(Platform.OS === 'web');
+  const [voiceAvailable, setVoiceAvailable] = useState(false);
   
   const supportedLanguages = [
     { code: 'en-IN', name: 'English (India)' },
@@ -44,6 +47,12 @@ export default function AddDogScreen({ navigation }) {
 
   useEffect(() => {
     (async () => {
+      // Request microphone permission (iOS/Android)
+      try {
+        const perm = await Audio.requestPermissionsAsync();
+        setMicGranted(!!perm.granted);
+      } catch {}
+
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') return;
@@ -60,6 +69,17 @@ export default function AddDogScreen({ navigation }) {
       Voice.onSpeechEnd = onSpeechEnd;
       Voice.onSpeechResults = onSpeechResults;
       Voice.onSpeechError = onSpeechError;
+
+      // Check device availability for speech recognition
+      (async () => {
+        try {
+          const fn = Voice.isAvailable;
+          const avail = typeof fn === 'function' ? await fn() : true;
+          setVoiceAvailable(!!avail);
+        } catch {
+          setVoiceAvailable(true); // assume available if method not present
+        }
+      })();
 
       return () => {
         Voice.destroy().then(Voice.removeAllListeners);
@@ -103,11 +123,29 @@ export default function AddDogScreen({ navigation }) {
       );
       return;
     }
+    // Ensure mic permission
+    if (!micGranted) {
+      try {
+        const perm = await Audio.requestPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Microphone permission needed', 'Please grant microphone access to use voice notes.');
+          return;
+        }
+        setMicGranted(true);
+      } catch {}
+    }
     try {
+      // Try selected language, fallback to en-US if it fails quickly
       await Voice.start(selectedLanguage);
     } catch (error) {
-      console.error('Speech recognition error:', error);
-      Alert.alert('Error', 'Failed to start speech recognition');
+      console.error('Speech recognition error (start):', error);
+      // Fallback to en-US if language not supported
+      try {
+        await Voice.start('en-US');
+      } catch (err2) {
+        console.error('Speech recognition error (fallback):', err2);
+        Alert.alert('Error', 'Failed to start speech recognition');
+      }
     }
   };
 
@@ -391,12 +429,12 @@ export default function AddDogScreen({ navigation }) {
           <TouchableOpacity 
             style={[styles.micButton, isRecording && styles.micButtonRecording]}
             onPress={isRecording ? stopRecording : startRecording}
-            disabled={Platform.OS === 'web' || !Voice}
+            disabled={Platform.OS === 'web' || !Voice || !micGranted || !voiceAvailable}
           >
             <Ionicons 
               name={isRecording ? "stop-circle" : "mic"} 
               size={24} 
-              color={isRecording ? "#ef4444" : (!Voice ? "#9ca3af" : "#3b82f6")} 
+              color={isRecording ? "#ef4444" : (!Voice || !micGranted || !voiceAvailable ? "#9ca3af" : "#3b82f6")} 
             />
           </TouchableOpacity>
         </View>
@@ -406,11 +444,19 @@ export default function AddDogScreen({ navigation }) {
             <Text style={styles.recordingText}>Listening... Speak now</Text>
           </View>
         )}
-        {!Voice && Platform.OS !== 'web' && (
+        {(!Voice || !voiceAvailable) && Platform.OS !== 'web' && (
           <View style={styles.voiceUnavailableNotice}>
             <Ionicons name="information-circle" size={16} color="#f59e0b" />
             <Text style={styles.voiceUnavailableText}>
-              Voice requires dev build: npx expo prebuild
+              Voice requires a dev build. Run: npx expo prebuild && npx expo run:ios (or run:android)
+            </Text>
+          </View>
+        )}
+        {!micGranted && Platform.OS !== 'web' && (
+          <View style={styles.voiceUnavailableNotice}>
+            <Ionicons name="mic-off" size={16} color="#ef4444" />
+            <Text style={styles.voiceUnavailableText}>
+              Microphone permission is not granted. Please enable it in system settings.
             </Text>
           </View>
         )}

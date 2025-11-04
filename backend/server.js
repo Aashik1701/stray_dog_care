@@ -2,6 +2,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const app = require('./src/app');
 const connectDB = require('./src/config/database');
+const alertService = require('./src/services/alertService');
 
 // Connect to database
 connectDB();
@@ -24,7 +25,7 @@ const io = socketIo(server, {
 // Attach to app for access in controllers
 app.set('io', io);
 
-// Socket.io connection handling
+// Socket.io connection handling with enhanced alert pipeline
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
   
@@ -32,6 +33,12 @@ io.on('connection', (socket) => {
   socket.on('join-organization', (organizationId) => {
     socket.join(`org-${organizationId}`);
     console.log(`User ${socket.id} joined organization ${organizationId}`);
+  });
+
+  // Join user to their zone room (for zone-specific alerts)
+  socket.on('join-zone', (zone) => {
+    socket.join(`zone-${zone}`);
+    console.log(`User ${socket.id} joined zone ${zone}`);
   });
 
   // Handle new dog registration broadcast
@@ -44,10 +51,33 @@ io.on('connection', (socket) => {
     socket.to(`org-${data.organizationId}`).emit('dog-status-changed', data);
   });
 
+  // Alert acknowledgment
+  socket.on('alert.acknowledge', (data) => {
+    socket.to(`org-${data.organizationId}`).emit('alert.acknowledged', data);
+  });
+
+  // Alert assignment
+  socket.on('alert.assign', (data) => {
+    socket.to(`org-${data.organizationId}`).emit('alert.assigned', data);
+  });
+
+  // Alert resolution
+  socket.on('alert.resolve', (data) => {
+    socket.to(`org-${data.organizationId}`).emit('alert.resolved', data);
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
   });
 });
+
+// Automated escalation checker (runs every 5 minutes)
+// This implements operational intelligence for automatic escalation
+setInterval(() => {
+  alertService.checkAndEscalateAlerts(io).catch(err => {
+    console.error('[Server] Escalation check error:', err);
+  });
+}, 5 * 60 * 1000); // 5 minutes
 
 // Start server
 const PORT = process.env.PORT || 3000;

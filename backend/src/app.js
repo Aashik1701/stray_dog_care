@@ -12,6 +12,7 @@ const dogRoutes = require('./routes/dogs');
 const nlpRoutes = require('./routes/nlp');
 const userRoutes = require('./routes/users');
 const uploadRoutes = require('./routes/uploads');
+const alertRoutes = require('./routes/alerts');
 
 // Import middleware
 const { errorHandler, notFound } = require('./middleware/errorHandler');
@@ -80,6 +81,7 @@ app.use('/api/dogs', dogRoutes);
 app.use('/api/nlp', nlpRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/alerts', alertRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

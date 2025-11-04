@@ -16,12 +16,18 @@ import api from '../services/api';
 const { width } = Dimensions.get('window');
 
 export default function DogDetailScreen({ route, navigation }) {
-  const { dogId } = route.params;
+  // Accept both `dogId` and legacy `id` param for robustness
+  const dogId = route?.params?.dogId || route?.params?.id;
   const [dog, setDog] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
+    if (!dogId) {
+      Alert.alert('Invalid route', 'No dog id provided');
+      navigation.goBack();
+      return;
+    }
     fetchDogDetails();
   }, [dogId]);
 
@@ -102,6 +108,16 @@ export default function DogDetailScreen({ route, navigation }) {
       </View>
     );
   }
+
+  const formatAddress = (addr) => {
+    if (!addr) return '';
+    if (typeof addr === 'string') return addr;
+    if (typeof addr === 'object') {
+      const { street, area, city, state, postalCode, country } = addr || {};
+      return [street, area, city, state, postalCode, country].filter(Boolean).join(', ');
+    }
+    return String(addr);
+  };
 
   const StatusBadge = ({ label, isActive, color }) => (
     <View style={[styles.statusBadge, { backgroundColor: isActive ? color : '#f3f4f6' }]}>
@@ -285,7 +301,7 @@ export default function DogDetailScreen({ route, navigation }) {
           Coordinates: {dog.location?.coordinates?.[1]?.toFixed(6)}, {dog.location?.coordinates?.[0]?.toFixed(6)}
         </Text>
         {dog.address && (
-          <Text style={styles.addressText}>{dog.address}</Text>
+          <Text style={styles.addressText}>{formatAddress(dog.address)}</Text>
         )}
       </View>
     </ScrollView>
