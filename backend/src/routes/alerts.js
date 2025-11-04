@@ -8,10 +8,10 @@ const {
   resolveAlert,
   getAlertStats
 } = require('../controllers/alertController');
-const { auth } = require('../middleware/auth');
+const { protect } = require('../middleware/auth');
 
 // All routes require authentication
-router.use(auth);
+router.use(protect);
 
 // Get alert statistics
 router.get('/stats', getAlertStats);
