@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { shadow } from '../ui/shadow';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../services/api';
+import socketService from '../services/socket';
 import { useAuth } from '../contexts/AuthProvider';
 
 export default function HomeScreen({ navigation }) {
   const [stats, setStats] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const { logout, user, loading: authLoading } = useAuth();
+  const [alerts, setAlerts] = useState([]);
+  const { logout, user, token, loading: authLoading } = useAuth();
 
   useEffect(() => {
     // Wait for auth to be initialized and user to be available
@@ -16,6 +18,74 @@ export default function HomeScreen({ navigation }) {
       fetchData();
     }
   }, [authLoading, user]);
+
+  // Socket.io connection for real-time alerts
+  useEffect(() => {
+    if (!token || !user) return;
+
+    // Connect to Socket.io
+    const organizationId = user.organization?._id || user.organization;
+    const zones = user.assignedZones || [];
+    
+    socketService.connect(token, organizationId, zones);
+
+    // Subscribe to alert events
+    const unsubscribeAlertNew = socketService.on('alert.new', (alert) => {
+      handleNewAlert(alert);
+    });
+
+    const unsubscribeAlertCritical = socketService.on('alert.critical', (alert) => {
+      handleNewAlert(alert);
+    });
+
+    const unsubscribeAlertHigh = socketService.on('alert.high_priority', (alert) => {
+      handleNewAlert(alert);
+    });
+
+    const unsubscribeAlertZone = socketService.on('alert.zone', (alert) => {
+      handleNewAlert(alert);
+    });
+
+    // Cleanup
+    return () => {
+      unsubscribeAlertNew();
+      unsubscribeAlertCritical();
+      unsubscribeAlertHigh();
+      unsubscribeAlertZone();
+      socketService.disconnect();
+    };
+  }, [token, user]);
+
+  const handleNewAlert = (alert) => {
+    // Add to alerts list
+    setAlerts(prev => {
+      const exists = prev.find(a => a.alertId === alert.alertId);
+      if (exists) return prev;
+      return [alert, ...prev].slice(0, 10); // Keep last 10
+    });
+
+    // Show native alert for critical/urgent cases
+    if (alert.priority === 'critical' || alert.urgencyScore >= 0.85) {
+      Alert.alert(
+        '🚨 CRITICAL ALERT',
+        `${alert.title}\n\n${alert.message}\n\nLocation: ${alert.location?.zone || alert.zone || 'Unknown'}`,
+        [
+          { text: 'View Details', onPress: () => navigation.navigate('Dogs') },
+          { text: 'Dismiss', style: 'cancel' }
+        ],
+        { cancelable: false }
+      );
+    } else if (alert.priority === 'high' || alert.urgencyScore >= 0.7) {
+      Alert.alert(
+        '⚠️ URGENT ALERT',
+        `${alert.title}\n\n${alert.message}`,
+        [
+          { text: 'View', onPress: () => navigation.navigate('Dogs') },
+          { text: 'OK' }
+        ]
+      );
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -142,6 +212,41 @@ export default function HomeScreen({ navigation }) {
         </View>
       </View>
 
+      {/* Real-Time Alerts */}
+      {alerts.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🚨 Active Alerts</Text>
+          {alerts.slice(0, 3).map((alert) => (
+            <TouchableOpacity
+              key={alert.alertId}
+              style={[
+                styles.alertCard,
+                alert.priority === 'critical' && styles.alertCardCritical,
+                alert.priority === 'high' && styles.alertCardHigh
+              ]}
+              onPress={() => navigation.navigate('Dogs')}
+            >
+              <View style={styles.alertHeader}>
+                <Ionicons
+                  name={alert.priority === 'critical' ? 'warning' : 'alert-circle'}
+                  size={24}
+                  color={alert.priority === 'critical' ? '#ef4444' : '#f59e0b'}
+                />
+                <View style={styles.alertContent}>
+                  <Text style={styles.alertTitle}>{alert.title}</Text>
+                  <Text style={styles.alertMessage} numberOfLines={2}>
+                    {alert.message}
+                  </Text>
+                  <Text style={styles.alertLocation}>
+                    📍 {alert.location?.zone || alert.zone || 'Unknown location'}
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       {/* User Info */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your Profile</Text>
@@ -244,5 +349,46 @@ const styles = StyleSheet.create({
     marginTop: 4, 
     textTransform: 'capitalize',
     fontWeight: '500',
+  },
+  alertCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f59e0b',
+    ...shadow(2),
+  },
+  alertCardCritical: {
+    borderLeftColor: '#ef4444',
+    backgroundColor: '#fef2f2',
+  },
+  alertCardHigh: {
+    borderLeftColor: '#f59e0b',
+    backgroundColor: '#fffbeb',
+  },
+  alertHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  alertContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  alertTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  alertMessage: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  alertLocation: {
+    fontSize: 12,
+    color: '#9ca3af',
+    marginTop: 4,
   },
 });

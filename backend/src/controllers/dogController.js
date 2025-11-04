@@ -1,6 +1,7 @@
 const Dog = require('../models/Dog');
 const User = require('../models/User');
 const nlpService = require('../services/nlpService');
+const alertService = require('../services/alertService');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { diffObjects } = require('../utils/diff');
 
@@ -520,8 +521,17 @@ module.exports.createDogWithNLP = async (req, res) => {
 
     res.status(201).json({ success: true, message: 'Dog registered successfully', data: dog });
 
-    if (urgency >= 0.7 && req.app.get('io')) {
-      req.app.get('io').emit('dog.highUrgency', { id: dog._id, urgency, zone: dog.zone });
+    // Dynamic Alerting Pipeline: Auto-flag high-priority/emergency cases
+    // Leverages real-time sentiment and urgency analysis for instant action
+    if (nlpAnalysis && urgency >= 0.4) {
+      try {
+        const io = req.app.get('io');
+        const alert = await alertService.createAlertFromNLP(dog, nlpAnalysis, io);
+        console.log(`[Dynamic Alerting] Alert ${alert.alertId} created for ${dog.dogId} (Priority: ${priority}, Urgency: ${urgency.toFixed(2)})`);
+      } catch (alertError) {
+        // Non-fatal: log but don't fail the request
+        console.error('[Dynamic Alerting] Failed to create alert:', alertError.message);
+      }
     }
   } catch (error) {
     res.status(500).json({ success: false, message: 'Error creating dog record', error: error.message });
