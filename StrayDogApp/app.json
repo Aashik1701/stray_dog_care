@@ -20,7 +20,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "This app uses the microphone to capture your voice notes for faster report entry."
+        "NSMicrophoneUsageDescription": "This app uses the microphone to capture your voice notes for faster report entry.",
+        "NSSpeechRecognitionUsageDescription": "This app uses speech recognition to transcribe your voice notes into text."
       }
     },
     "android": {

@@ -77,10 +77,27 @@ async function predict(req, res) {
   }
 }
 
+// POST /api/nlp/embed
+async function embed(req, res) {
+  try {
+    const { text } = req.body || {};
+    if (!text || !text.trim()) {
+      return res.status(400).json({ success: false, message: 'Text is required' });
+    }
+    const vec = await nlpService.embed(text);
+    return res.json({ success: true, data: vec });
+  } catch (e) {
+    const status = e?.response?.status || 500;
+    const message = e.message || 'Embed failed';
+    return res.status(status).json({ success: false, message });
+  }
+}
+
 module.exports = {
   analyzeReport,
   getStatus,
   resetCircuit,
   predict,
+  embed,
   analyzeLimiter,
 };

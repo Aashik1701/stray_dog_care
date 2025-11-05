@@ -49,6 +49,18 @@ export default function AddDogScreen({ navigation }) {
     (async () => {
       // Request microphone permission (iOS/Android)
       try {
+        // Ensure audio mode allows recording on iOS
+        try {
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: true,
+            playsInSilentModeIOS: true,
+            interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+            staysActiveInBackground: false,
+            shouldDuckAndroid: true,
+            interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+            playThroughEarpieceAndroid: false
+          });
+        } catch {}
         const perm = await Audio.requestPermissionsAsync();
         setMicGranted(!!perm.granted);
       } catch {}
@@ -69,6 +81,12 @@ export default function AddDogScreen({ navigation }) {
       Voice.onSpeechEnd = onSpeechEnd;
       Voice.onSpeechResults = onSpeechResults;
       Voice.onSpeechError = onSpeechError;
+      // Also capture partial results for better UX
+      Voice.onSpeechPartialResults = (e) => {
+        if (e.value && e.value.length > 0) {
+          setSpeechRecognized(e.value[0]);
+        }
+      };
 
       // Check device availability for speech recognition
       (async () => {
@@ -82,7 +100,9 @@ export default function AddDogScreen({ navigation }) {
       })();
 
       return () => {
-        Voice.destroy().then(Voice.removeAllListeners);
+        try {
+          Voice.destroy().then(Voice.removeAllListeners);
+        } catch {}
       };
     }
   }, []);
@@ -110,8 +130,9 @@ export default function AddDogScreen({ navigation }) {
 
   const onSpeechError = (e) => {
     setIsRecording(false);
-    setSpeechError(e.error);
-    Alert.alert('Speech Recognition Error', e.error || 'Failed to recognize speech');
+    const message = (e?.error && (e.error.message || e.error)) || 'Failed to recognize speech';
+    setSpeechError(message);
+    Alert.alert('Speech Recognition Error', message);
   };
 
   const startRecording = async () => {
@@ -135,13 +156,30 @@ export default function AddDogScreen({ navigation }) {
       } catch {}
     }
     try {
-      // Try selected language, fallback to en-US if it fails quickly
-      await Voice.start(selectedLanguage);
+      // Verify speech is available on device
+      if (typeof Voice.isAvailable === 'function') {
+        const canUse = await Voice.isAvailable();
+        if (!canUse) {
+          Alert.alert('Speech not available', 'Speech recognition is not available on this device.');
+          return;
+        }
+      }
+      // Try selected language, with Android tuning options
+      const androidOptions = Platform.OS === 'android' ? {
+        EXTRA_PARTIAL_RESULTS: true,
+        EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS: 800,
+        EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: 800,
+        EXTRA_LANGUAGE_MODEL: 'LANGUAGE_MODEL_FREE_FORM'
+      } : undefined;
+      await Voice.start(selectedLanguage, androidOptions);
+      // Set recording state immediately; some platforms delay onSpeechStart
+      setIsRecording(true);
     } catch (error) {
       console.error('Speech recognition error (start):', error);
       // Fallback to en-US if language not supported
       try {
         await Voice.start('en-US');
+        setIsRecording(true);
       } catch (err2) {
         console.error('Speech recognition error (fallback):', err2);
         Alert.alert('Error', 'Failed to start speech recognition');

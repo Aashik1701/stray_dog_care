@@ -37,3 +37,53 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 - Swap stub logic with real models (Hugging Face transformers, spaCy, Whisper)
 - Add Redis cache/queue for heavy tasks
 - Add auth and rate limits if exposing publicly
+
+## Using IndicBERT for embeddings
+
+This service can load a local IndicBERT model and expose sentence embeddings:
+
+1) Place model files in a local folder (default: `nlp_service/models/indicbert`):
+
+- `config.json`
+- `pytorch_model.bin`
+- `spiece.model`
+- `spiece.vocab` (optional)
+
+You can change the folder by setting the `INDICBERT_MODEL_DIR` environment variable.
+
+2) Start the service as usual. On startup, it will attempt to load IndicBERT (optional).
+
+3) Call the endpoint to get an embedding for text:
+
+POST `/api/nlp/embed`
+Body:
+```
+{ "text": "A stray dog is injured near Andheri station." }
+```
+
+Response:
+```
+{
+	"ok": true,
+	"model": "indic-bert",
+	"dim": 768,
+	"vector": [ ... numbers ... ]
+}
+```
+
+4) Optional duplicates check with candidates via the existing endpoint:
+
+POST `/api/nlp/find-duplicates?threshold=0.82`
+Body:
+```
+{ "text": "lost dog near park" }
+```
+
+Query param `candidates` can be sent as a repeated parameter from clients that support it,
+or you can call `/api/nlp/embed` for each piece of text and compute similarities client-side
+or in your Node backend.
+
+Notes:
+- Embeddings require PyTorch. The service already pins `torch` in `requirements.txt`.
+- If the model folder is missing, the embed endpoint returns 404.
+- If Torch is not available, the embed endpoint returns 501.

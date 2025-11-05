@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { auth } = require('../middleware/auth');
-const { analyzeReport, getStatus, resetCircuit, analyzeLimiter, predict } = require('../controllers/nlpController');
+const { analyzeReport, getStatus, resetCircuit, analyzeLimiter, predict, embed } = require('../controllers/nlpController');
 
 // Analyze notes text (requires auth)
 router.post('/analyze-report', auth, analyzeLimiter, analyzeReport);
@@ -14,5 +14,8 @@ router.post('/reset-circuit', auth, resetCircuit);
 
 // Quick prediction test endpoint (public)
 router.get('/predict', predict);
+
+// Get embedding (requires auth)
+router.post('/embed', auth, embed);
 
 module.exports = router;

@@ -133,6 +133,19 @@ class NLPService {
     return this._requestWithRetry(exec, 'findDuplicates');
   }
 
+  async embed(text) {
+    const url = `${NLP_SERVICE_URL}/api/nlp/embed`;
+    const exec = async () => {
+      const { data } = await axios.post(
+        url,
+        { text },
+        { timeout: Math.min(NLP_TIMEOUT, 10000) }
+      );
+      return data;
+    };
+    return this._requestWithRetry(exec, 'embed');
+  }
+
   async predict(text = 'This is a great day!') {
     const url = `${NLP_SERVICE_URL}/predict`;
     const exec = async () => {
