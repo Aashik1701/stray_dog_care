@@ -1,0 +1,10 @@
+
+# IndicBERT model files (too large for GitHub)
+nlp_service/models/indicbert/*.bin
+nlp_service/models/indicbert/pytorch_model.bin
+nlp_service/models/indicbert/spiece.model
+nlp_service/models/indicbert/spiece.vocab
+nlp_service/models/indicbert/*.bin
+nlp_service/models/indicbert/pytorch_model.bin
+nlp_service/models/indicbert/spiece.model
+nlp_service/models/indicbert/spiece.vocab
