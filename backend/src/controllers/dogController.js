@@ -1,7 +1,6 @@
 const Dog = require('../models/Dog');
 const User = require('../models/User');
 const nlpService = require('../services/nlpService');
-const alertService = require('../services/alertService');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { diffObjects } = require('../utils/diff');
 
@@ -303,17 +302,12 @@ const updateDogStatus = asyncHandler(async (req, res) => {
 
   await dog.addActivity('Dog status updated', req.user._id, notes || 'Status update');
 
-  // Emit socket event if io present on app
-  if (req.app.get('io')) {
+  // Emit socket event if io present on app (will wire later)
+  if (req.app && req.app.get && req.app.get('io')) {
     req.app.get('io').emit('dog.updated', { id: dog._id, changes, status: dog.status, healthStatus: dog.healthStatus });
   }
 
   // Broadcast status update for high-priority cases via alerting service
-  if ((dog.priority === 'critical' || dog.priority === 'high') && req.app.get('alertingService')) {
-    const alertingService = req.app.get('alertingService');
-    alertingService.broadcastStatusUpdate(dog, 'status-update', req.user);
-  }
-
   res.json({ success: true, message: 'Dog status updated', data: dog });
 });
 
@@ -531,15 +525,26 @@ module.exports.createDogWithNLP = async (req, res) => {
     // Leverages real-time sentiment and urgency analysis for instant action
     if (nlpAnalysis && urgency >= 0.4) {
       try {
-        const io = req.app.get('io');
-        const alert = await alertService.createAlertFromNLP(dog, nlpAnalysis, io);
-        console.log(`[Dynamic Alerting] Alert ${alert.alertId} created for ${dog.dogId} (Priority: ${priority}, Urgency: ${urgency.toFixed(2)})`);
-      } catch (alertError) {
-        // Non-fatal: log but don't fail the request
-        console.error('[Dynamic Alerting] Failed to create alert:', alertError.message);
+        const io = req.app && req.app.get ? req.app.get('io') : null;
+        if (io) {
+          io.emit('dog.nlpAnalyzed', {
+            id: dog._id,
+            urgency,
+            priority,
+            category: nlpAnalysis.category,
+            sentiment: nlpAnalysis.sentiment,
+            zone: dog.zone
+          });
+
+          if (urgency >= 0.7) {
+            io.emit('dog.highUrgency', { id: dog._id, urgency, zone: dog.zone });
+          }
+        }
+      } catch (e) {
+        console.warn('Alert emission failed:', e.message);
       }
     }
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Error creating dog record', error: error.message });
+    res.status(500).json({ success: false, message: 'Error creating dog record with NLP', error: error.message });
   }
 };

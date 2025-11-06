@@ -38,9 +38,40 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 - Add Redis cache/queue for heavy tasks
 - Add auth and rate limits if exposing publicly
 
-## Using IndicBERT for embeddings
+## Embeddings (Sentence-Transformers by default)
 
-This service can load a local IndicBERT model and expose sentence embeddings:
+By default, the service now serves embeddings using Sentence-Transformers, which
+avoids tokenizer conversion issues (e.g., SentencePiece to fast tokenizer) and
+works out of the box for popular SBERT models.
+
+- Environment variable to choose the model: `NLP_EMBED_MODEL`
+- Default: `sentence-transformers/multi-qa-MiniLM-L6-cos-v1`
+
+POST `/api/nlp/embed`
+Body:
+```
+{ "text": "A stray dog is injured near Andheri station." }
+```
+
+Response:
+```
+{
+	"ok": true,
+	"model": "sentence-transformers/multi-qa-MiniLM-L6-cos-v1",
+	"dim": 384,
+	"vector": [ ... numbers ... ]
+}
+```
+
+If you prefer a non-SentencePiece model to minimize dependencies, set:
+
+```
+NLP_EMBED_MODEL=sentence-transformers/all-MiniLM-L6-v2
+```
+
+### Using IndicBERT for embeddings (optional)
+
+This service can also load a local IndicBERT model and expose sentence embeddings:
 
 1) Place model files in a local folder (default: `nlp_service/models/indicbert`):
 
@@ -52,6 +83,8 @@ This service can load a local IndicBERT model and expose sentence embeddings:
 You can change the folder by setting the `INDICBERT_MODEL_DIR` environment variable.
 
 2) Start the service as usual. On startup, it will attempt to load IndicBERT (optional).
+	The `/api/nlp/embed` endpoint uses Sentence-Transformers by default; keep
+	IndicBERT for specialized workflows or the duplicate detection helper.
 
 3) Call the endpoint to get an embedding for text:
 
