@@ -1,10 +1,13 @@
+import os
+# Avoid importing torchvision via transformers image utils (text-only service)
+os.environ.setdefault("TRANSFORMERS_NO_TORCHVISION", "1")
+
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from pydantic import BaseModel
-from typing import Optional, List
-from transformers import pipeline
+from typing import Optional, List, cast
 from functools import lru_cache
 import re
-import os
+import numpy as np
 
 try:
     import torch
@@ -16,6 +19,16 @@ except Exception:
 if HAS_TORCH:
     import torch.nn.functional as F  # type: ignore
     from transformers import AutoTokenizer, AutoModel  # type: ignore
+
+# Sentence-Transformers (robust sentence embedding pipeline)
+try:
+    from sentence_transformers import SentenceTransformer  # type: ignore
+    HAS_ST = True
+except Exception:
+    SentenceTransformer = None  # type: ignore
+    HAS_ST = False
+
+# Defer importing transformers.pipeline to inside functions (avoids E402)
 
 app = FastAPI(title="Stray Dog NLP Service", version="0.2.0")
 
@@ -29,6 +42,9 @@ DEVICE_NAME = (
 )
 
 _MODELS_WARMED = False
+DEFAULT_EMBED_MODEL = (
+    "sentence-transformers/multi-qa-MiniLM-L6-cos-v1"
+)
 
 
 class AnalyzePayload(BaseModel):
@@ -57,6 +73,9 @@ def health():
         ),
         "warmed": _MODELS_WARMED,
         "version": app.version,
+        "embed_model": os.environ.get(
+            "NLP_EMBED_MODEL", DEFAULT_EMBED_MODEL
+        ),
     }
 
 
@@ -165,9 +184,9 @@ def find_duplicates(
                 for (c, s) in paired
                 if s >= (threshold or 0.82)
             ]
-            is_dup = bool(
-                similar and similar[0]["similarity"] >= (threshold or 0.82)
-            )
+            thr = float(threshold or 0.82)
+            s0 = cast(float, similar[0]["similarity"]) if similar else 0.0
+            is_dup = bool(similar and s0 >= thr)
             return {
                 "is_potential_duplicate": is_dup,
                 "similar_reports": similar,
@@ -175,7 +194,36 @@ def find_duplicates(
         except Exception as e:
             # Fall back to stub if anything goes wrong
             print(f"[NLP] duplicates fallback due to error: {e}")
-            pass
+            # Try Sentence-Transformers fallback if available
+            try:
+                st = get_st_embedder()
+                vecs = st.encode(
+                    [text] + candidates,
+                    normalize_embeddings=True,
+                    convert_to_numpy=True,
+                    show_progress_bar=False,
+                )
+                q = vecs[0]
+                cands = vecs[1:]
+                # cosine sim via dot product (normalized vectors)
+                sims = [float(np.dot(q, v)) for v in cands]
+                paired = sorted(
+                    zip(candidates, sims), key=lambda x: x[1], reverse=True
+                )
+                thr = float(threshold or 0.82)
+                similar = [
+                    {"text": c, "similarity": s}
+                    for (c, s) in paired
+                    if s >= thr
+                ]
+                s0 = cast(float, similar[0]["similarity"]) if similar else 0.0
+                is_dup = bool(similar and s0 >= thr)
+                return {
+                    "is_potential_duplicate": is_dup,
+                    "similar_reports": similar,
+                }
+            except Exception as se:
+                print(f"[NLP] ST fallback failed: {se}")
     # Default stub behavior
     return {
         "is_potential_duplicate": False,
@@ -199,6 +247,7 @@ async def speech_to_text(
 
 @lru_cache(maxsize=1)
 def get_sentiment_pipeline():
+    from transformers import pipeline
     return pipeline(
         "sentiment-analysis",
         model="distilbert-base-uncased-finetuned-sst-2-english",
@@ -208,6 +257,7 @@ def get_sentiment_pipeline():
 
 @lru_cache(maxsize=1)
 def get_zero_shot_pipeline():
+    from transformers import pipeline
     return pipeline(
         "zero-shot-classification",
         model="facebook/bart-large-mnli",
@@ -218,6 +268,7 @@ def get_zero_shot_pipeline():
 @lru_cache(maxsize=1)
 def get_summarizer_pipeline():
     # smaller, faster summarizer than BART-large
+    from transformers import pipeline
     return pipeline(
         "summarization",
         model="sshleifer/distilbart-cnn-12-6",
@@ -228,6 +279,7 @@ def get_summarizer_pipeline():
 @lru_cache(maxsize=1)
 def get_ner_pipeline():
     # Aggregated token classification merges B-/I- spans
+    from transformers import pipeline
     return pipeline(
         "token-classification",
         model="dslim/bert-base-NER",
@@ -334,29 +386,52 @@ def _encode_embedding(text: str, model, tokenizer, device_t):
         return emb
 
 
+@lru_cache(maxsize=1)
+def get_st_embedder():
+    """Load a SentenceTransformer embedder.
+    Model name can be overridden via NLP_EMBED_MODEL env var.
+    Defaults to multi-qa-MiniLM-L6-cos-v1 (great for semantic search).
+    """
+    model_name = os.environ.get("NLP_EMBED_MODEL", DEFAULT_EMBED_MODEL)
+    if not HAS_ST:
+        raise RuntimeError(
+            "sentence-transformers is not installed. "
+            "Add it to requirements.txt"
+        )
+    device_arg = "cuda" if (HAS_TORCH and torch.cuda.is_available()) else "cpu"
+    model = SentenceTransformer(model_name, device=device_arg)
+    return model
+
+
 @app.post("/api/nlp/embed")
 def embed_text(payload: EmbedPayload):
-    """Return an IndicBERT embedding for the given text.
+    """Return a sentence-transformers embedding for the given text.
     Response: { ok, model, dim, vector: number[] }
+    Falls back to detailed error if model/tokenizer incompatibility occurs.
     """
-    if not HAS_TORCH:
-        raise HTTPException(
-            status_code=501, detail="Torch not available on server"
-        )
     try:
-        model, tok, device_t = get_indicbert()
-        emb = _encode_embedding(payload.text, model, tok, device_t)
-        vec = emb.detach().cpu().tolist()
+        st_model = get_st_embedder()
+        vec = st_model.encode(
+            payload.text,
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+            show_progress_bar=False,
+        ).tolist()
         return {
             "ok": True,
-            "model": "indic-bert",
+            "model": os.environ.get("NLP_EMBED_MODEL", DEFAULT_EMBED_MODEL),
             "dim": len(vec),
             "vector": vec,
         }
-    except FileNotFoundError as fe:
-        raise HTTPException(status_code=404, detail=str(fe))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Embedding failed: {e}")
+        # Provide a helpful hint if SentencePiece conversion errors arise
+        msg = str(e)
+        if "SentencePiece" in msg or "Tiktoken" in msg:
+            msg += (
+                " | Hint: Use SentenceTransformer or set NLP_EMBED_MODEL="
+                "'sentence-transformers/all-MiniLM-L6-v2'."
+            )
+        raise HTTPException(status_code=500, detail=f"Embedding failed: {msg}")
 
 
 @app.on_event("startup")
@@ -376,6 +451,14 @@ def warm_models():
             print("[NLP] IndicBERT loaded")
         except Exception as e:
             print(f"[NLP] IndicBERT not loaded (optional): {e}")
+
+        # Warm Sentence-Transformer embedder (primary path)
+        try:
+            st = get_st_embedder()
+            _ = st.encode("ok", normalize_embeddings=True)
+            print("[NLP] SentenceTransformer embedder loaded")
+        except Exception as e:
+            print(f"[NLP] ST embedder not loaded: {e}")
 
         # Tiny warm-up calls (fast and cached by HF)
         _ = s("ok")

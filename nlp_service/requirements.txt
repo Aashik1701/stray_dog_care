@@ -9,3 +9,4 @@ torch==2.4.1
 sentencepiece==0.2.0
 accelerate==0.34.2
 python-multipart==0.0.9
+sentence-transformers==3.2.1

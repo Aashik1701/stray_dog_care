@@ -302,8 +302,8 @@ const updateDogStatus = asyncHandler(async (req, res) => {
 
   await dog.addActivity('Dog status updated', req.user._id, notes || 'Status update');
 
-  // Emit socket event if io present on app
   // Emit socket event if io present on app (will wire later)
+  if (req.app && req.app.get && req.app.get('io')) {
     req.app.get('io').emit('dog.updated', { id: dog._id, changes, status: dog.status, healthStatus: dog.healthStatus });
   }
 
@@ -525,8 +525,26 @@ module.exports.createDogWithNLP = async (req, res) => {
     // Leverages real-time sentiment and urgency analysis for instant action
     if (nlpAnalysis && urgency >= 0.4) {
       try {
-        const io = req.app.get('io');
+        const io = req.app && req.app.get ? req.app.get('io') : null;
+        if (io) {
+          io.emit('dog.nlpAnalyzed', {
+            id: dog._id,
+            urgency,
+            priority,
+            category: nlpAnalysis.category,
+            sentiment: nlpAnalysis.sentiment,
+            zone: dog.zone
+          });
 
-    if (urgency >= 0.7 && req.app.get('io')) {
-      req.app.get('io').emit('dog.highUrgency', { id: dog._id, urgency, zone: dog.zone });
+          if (urgency >= 0.7) {
+            io.emit('dog.highUrgency', { id: dog._id, urgency, zone: dog.zone });
+          }
+        }
+      } catch (e) {
+        console.warn('Alert emission failed:', e.message);
+      }
     }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error creating dog record with NLP', error: error.message });
+  }
+};
