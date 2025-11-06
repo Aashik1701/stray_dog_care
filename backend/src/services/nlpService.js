@@ -146,6 +146,19 @@ class NLPService {
     return this._requestWithRetry(exec, 'embed');
   }
 
+  async pipeline(text, language = 'en') {
+    const url = `${NLP_SERVICE_URL}/api/nlp/pipeline`;
+    const exec = async () => {
+      const { data } = await axios.post(
+        url,
+        { text, language },
+        { timeout: NLP_TIMEOUT }
+      );
+      return data;
+    };
+    return this._requestWithRetry(exec, 'pipeline');
+  }
+
   async predict(text = 'This is a great day!') {
     const url = `${NLP_SERVICE_URL}/predict`;
     const exec = async () => {

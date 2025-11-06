@@ -13,6 +13,8 @@ const nlpRoutes = require('./routes/nlp');
 const userRoutes = require('./routes/users');
 const uploadRoutes = require('./routes/uploads');
 const alertRoutes = require('./routes/alerts');
+const reportRoutes = require('./routes/reports');
+const searchRoutes = require('./routes/search');
 
 // Import middleware
 const { errorHandler, notFound } = require('./middleware/errorHandler');
@@ -82,6 +84,8 @@ app.use('/api/nlp', nlpRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/search', searchRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {

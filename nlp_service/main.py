@@ -61,6 +61,11 @@ class DuplicatePayload(BaseModel):
     text: str
 
 
+class PipelinePayload(BaseModel):
+    text: str
+    language: Optional[str] = None
+
+
 @app.get("/health")
 def health():
     return {
@@ -152,6 +157,99 @@ def analyze_report(payload: AnalyzePayload):
         "urgency_score": urgency,
         "summary": summary,
         "entities": entities,
+    }
+
+
+@app.post("/api/nlp/pipeline")
+def unified_pipeline(payload: PipelinePayload):
+    """Run the full NLP pipeline in one call and return a unified payload.
+    Fields: language, translated_text, embedding, sentiment, urgency_score,
+    classification (top-3 labels), entities, summary.
+    """
+    text = (payload.text or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
+
+    # Simple language handling (stub: assume provided or 'en')
+    lang = payload.language or "en"
+    translated_text = text  # stub: integrate IndicTrans2 later
+
+    # Pipelines
+    sentiment_clf = get_sentiment_pipeline()
+    zero_shot = get_zero_shot_pipeline()
+    summarizer = get_summarizer_pipeline()
+    ner = get_ner_pipeline()
+
+    # Sentiment
+    sent = sentiment_clf(translated_text, truncation=True)[0]
+    sentiment_label = sent.get("label", "neutral").lower()
+    # Urgency heuristic (reuse analyze logic)
+    low = translated_text.lower()
+    negative_keywords = [
+        "bleed", "injur", "bite", "die", "critical", "urgent",
+    ]
+    keyword_hit = any(k in low for k in negative_keywords)
+    urgency = 0.8 * (1.0 if sentiment_label == "negative" else 0.3) + (
+        0.2 if keyword_hit else 0.0
+    )
+    urgency = max(0.0, min(1.0, urgency))
+
+    # Classification (zero-shot top-3)
+    candidate_labels = [
+        "bite incident",
+        "injury case",
+        "adoption request",
+        "cruelty report",
+        "health concern",
+        "general sighting",
+    ]
+    z = zero_shot(
+        translated_text, candidate_labels=candidate_labels, multi_label=False
+    )
+    if isinstance(z, dict):
+        labels = z.get("labels", [])[:3]
+        scores = z.get("scores", [])[:3]
+        classification = []
+        for i, lbl in enumerate(labels):
+            sc = float(scores[i]) if i < len(scores) else 0.0
+            classification.append({"label": lbl, "score": sc})
+    else:
+        classification = [{"label": "general sighting", "score": 1.0}]
+
+    # Summary
+    summary = summarizer(
+        translated_text, max_length=60, min_length=12, do_sample=False
+    )[0]["summary_text"]
+
+    # Entities
+    entities = extract_entities(translated_text, ner)
+
+    # Embedding via Sentence-Transformers
+    try:
+        st_model = get_st_embedder()
+        vec = st_model.encode(
+            translated_text,
+            normalize_embeddings=True,
+            convert_to_numpy=True,
+            show_progress_bar=False,
+        ).tolist()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Embedding failed: {e}")
+
+    return {
+        "language": lang,
+        "translated_text": translated_text,
+        "embedding": vec,
+        "sentiment": {
+            "label": sentiment_label,
+            "score": float(sent.get("score", 0.0)),
+        },
+        "urgency_score": urgency,
+        "classification": classification,
+        "entities": entities,
+        "summary": summary,
+        "model": os.environ.get("NLP_EMBED_MODEL", DEFAULT_EMBED_MODEL),
+        "dim": len(vec),
     }
 
  

@@ -99,5 +99,36 @@ module.exports = {
   resetCircuit,
   predict,
   embed,
+  async pipeline(req, res) {
+    try {
+      const { text, language = 'en' } = req.body || {};
+      if (!text || !text.trim()) {
+        return res.status(400).json({ success: false, message: 'Text is required' });
+      }
+      const result = await nlpService.pipeline(text, language);
+
+      // Real-time alerting if urgency high
+      const urgency = typeof result?.urgency_score === 'number' ? result.urgency_score : 0;
+      if (urgency >= 0.75 && req.app && req.app.get && req.app.get('io')) {
+        req.app.get('io').emit('nlp.highUrgency', {
+          text,
+          urgency,
+          sentiment: result?.sentiment,
+          classification: result?.classification,
+          entities: result?.entities,
+          summary: result?.summary,
+        });
+      }
+
+      return res.json({ success: true, data: result });
+    } catch (e) {
+      const status = e?.response?.status || 500;
+      let message = e.message || 'Pipeline failed';
+      if (e.code === 'NLP_CIRCUIT_OPEN' || e.serviceUnavailable) {
+        message = 'NLP service is currently unavailable. Please ensure the NLP service is running.';
+      }
+      return res.status(status).json({ success: false, message });
+    }
+  },
   analyzeLimiter,
 };
