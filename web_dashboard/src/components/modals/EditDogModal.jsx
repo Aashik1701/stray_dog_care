@@ -105,10 +105,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
               {/* Basic Info */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="dog-name" className="block text-sm font-medium text-gray-700 mb-1">
                     Name
                   </label>
                   <input
+                    id="dog-name"
                     type="text"
                     value={formData.name}
                     onChange={(e) => handleChange('name', e.target.value)}
@@ -118,10 +119,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="dog-zone" className="block text-sm font-medium text-gray-700 mb-1">
                     Zone *
                   </label>
                   <input
+                    id="dog-zone"
                     type="text"
                     value={formData.zone}
                     onChange={(e) => handleChange('zone', e.target.value)}
@@ -134,10 +136,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
               {/* Physical Characteristics */}
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="dog-size" className="block text-sm font-medium text-gray-700 mb-1">
                     Size *
                   </label>
                   <select
+                    id="dog-size"
                     value={formData.size}
                     onChange={(e) => handleChange('size', e.target.value)}
                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
@@ -150,10 +153,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="dog-gender" className="block text-sm font-medium text-gray-700 mb-1">
                     Gender
                   </label>
                   <select
+                    id="dog-gender"
                     value={formData.gender}
                     onChange={(e) => handleChange('gender', e.target.value)}
                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
@@ -165,10 +169,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="dog-age" className="block text-sm font-medium text-gray-700 mb-1">
                     Estimated Age
                   </label>
                   <select
+                    id="dog-age"
                     value={formData.estimatedAge}
                     onChange={(e) => handleChange('estimatedAge', e.target.value)}
                     className="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
@@ -184,10 +189,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="dog-color" className="block text-sm font-medium text-gray-700 mb-1">
                     Color
                   </label>
                   <input
+                    id="dog-color"
                     type="text"
                     value={formData.color}
                     onChange={(e) => handleChange('color', e.target.value)}
@@ -197,10 +203,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="dog-breed" className="block text-sm font-medium text-gray-700 mb-1">
                     Breed
                   </label>
                   <input
+                    id="dog-breed"
                     type="text"
                     value={formData.breed}
                     onChange={(e) => handleChange('breed', e.target.value)}
@@ -268,10 +275,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
 
                 {formData.healthStatus.isInjured && (
                   <div className="mt-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="injury-description" className="block text-sm font-medium text-gray-700 mb-1">
                       Injury Description
                     </label>
                     <textarea
+                      id="injury-description"
                       value={formData.healthStatus.injuryDescription}
                       onChange={(e) => handleHealthStatusChange('injuryDescription', e.target.value)}
                       rows={2}
@@ -282,10 +290,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
                 )}
 
                 <div className="mt-3">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="health-notes" className="block text-sm font-medium text-gray-700 mb-1">
                     Health Notes
                   </label>
                   <textarea
+                    id="health-notes"
                     value={formData.healthStatus.notes}
                     onChange={(e) => handleHealthStatusChange('notes', e.target.value)}
                     rows={2}
@@ -297,10 +306,11 @@ export default function EditDogModal({ dog, isOpen, onClose, onSave }) {
 
               {/* General Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="general-notes" className="block text-sm font-medium text-gray-700 mb-1">
                   General Notes
                 </label>
                 <textarea
+                  id="general-notes"
                   value={formData.notes}
                   onChange={(e) => handleChange('notes', e.target.value)}
                   rows={3}

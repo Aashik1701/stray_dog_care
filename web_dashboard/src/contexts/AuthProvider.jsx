@@ -115,8 +115,8 @@ const AuthProvider = ({ children }) => {
     try {
       // Try to login with test account
       const response = await apiService.login({
-        email: 'worker@dogster.com',
-        password: 'worker123'
+        email: 'coordinator@dogster.com',
+        password: 'coordinator123'
       });
 
       if (response.success) {

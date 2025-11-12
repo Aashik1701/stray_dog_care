@@ -11,6 +11,7 @@ import UsersPage from './pages/UsersPage';
 import LoginPage from './pages/LoginPage';
 import MapPage from './pages/MapPage';
 import RegisterPage from './pages/RegisterPage';
+import Analytics from './pages/Analytics';
 
 // Protected App Routes Component
 const AppRoutes = () => {
@@ -49,7 +50,7 @@ const AppRoutes = () => {
           path="analytics" 
           element={
             <ProtectedRoute requiredPermissions={['view_analytics']}>
-              <div className="p-6 text-center text-gray-500">Analytics coming soon...</div>
+              <Analytics />
             </ProtectedRoute>
           } 
         />
