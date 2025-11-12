@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GoogleMap, useJsApiLoader, MarkerClustererF, InfoWindowF, Autocomplete, MarkerF } from '@react-google-maps/api';
 import api from '../services/api';
+import socketService from '../services/socket';
+import { useToast } from '../contexts/ToastContext';
 
 const DEFAULT_CENTER = { lat: 12.9716, lng: 77.5946 };
 const LIBRARIES = ['places', 'marker'];
@@ -8,6 +10,7 @@ const LIBRARIES = ['places', 'marker'];
 const containerStyle = { width: '100%', height: '100%' };
 
 export default function MapPage() {
+  const toast = useToast();
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [zoom, setZoom] = useState(12);
   const [dogs, setDogs] = useState([]);
@@ -35,6 +38,59 @@ export default function MapPage() {
     })();
     return () => { mounted = false; };
   }, []);
+
+  // Real-time updates: Listen for new dog registrations
+  useEffect(() => {
+    // Listen for dog.created event
+    const unsubscribeCreated = socketService.on('dog.created', (newDog) => {
+      console.log('[MapPage] New dog registered:', newDog);
+      
+      // Show notification
+      toast.success(`🐕 New dog spotted on the map in ${newDog.zone || 'your area'}!`);
+      
+      // Add the new dog to the map immediately
+      setDogs(prevDogs => {
+        // Check if dog already exists to avoid duplicates
+        const exists = prevDogs.some(d => d._id === newDog.id || d._id === newDog._id);
+        if (exists) return prevDogs;
+        
+        // Add new dog with proper location format
+        const dogWithLocation = {
+          _id: newDog.id || newDog._id,
+          dogId: newDog.dogId,
+          location: {
+            type: 'Point',
+            coordinates: newDog.coordinates || [0, 0] // Backend should send coordinates
+          },
+          healthStatus: newDog.healthStatus || {},
+          zone: newDog.zone,
+          status: newDog.status,
+          createdAt: newDog.createdAt
+        };
+        
+        return [dogWithLocation, ...prevDogs];
+      });
+    });
+
+    // Listen for dog-registered event (legacy)
+    const unsubscribeRegistered = socketService.on('dog-registered', (data) => {
+      console.log('[MapPage] Dog registered (legacy):', data);
+      toast.success('🐕 New dog added to the map!');
+      
+      // Refresh all dogs from API to ensure we have complete data
+      api.getDogs().then(res => {
+        const list = res?.data?.dogs || res?.data?.data?.dogs || [];
+        setDogs(list);
+      }).catch(err => console.error('Error refreshing dogs:', err));
+    });
+
+    // Cleanup
+    return () => {
+      unsubscribeCreated();
+      unsubscribeRegistered();
+    };
+  }, [toast]);
+
 
   const mapOptions = useMemo(() => ({
     mapTypeControl: false,

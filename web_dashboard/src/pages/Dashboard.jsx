@@ -3,8 +3,12 @@ import { motion } from 'framer-motion';
 import MetricCard from '../components/ui/MetricCard';
 import RecentRegistrations from '../components/dashboard/RecentRegistrations';
 import QuickActions from '../components/dashboard/QuickActions';
+import EditDogModal from '../components/modals/EditDogModal';
+import DeleteConfirmModal from '../components/modals/DeleteConfirmModal';
 import { LoadingCard } from '../components/ui/Loading';
 import apiService from '../services/api';
+import socketService from '../services/socket';
+import { useToast } from '../contexts/ToastContext';
 import { 
   UsersIcon, 
   HeartIcon, 
@@ -15,6 +19,7 @@ import {
 export default function Dashboard() {
   // Silence linter for JSX usage of motion
   void motion;
+  const toast = useToast();
   const [stats, setStats] = useState({
     total: 12,
     sterilized: 8,
@@ -48,6 +53,9 @@ export default function Dashboard() {
   ]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedDog, setSelectedDog] = useState(null);
 
   console.log('Dashboard component rendering...', { stats, dogs, loading, error });
 
@@ -55,6 +63,54 @@ export default function Dashboard() {
     console.log('Dashboard useEffect running...');
     fetchDashboardData();
   }, []);
+
+  // Real-time updates: Listen for new dog registrations
+  useEffect(() => {
+    // Listen for dog.created event
+    const unsubscribeCreated = socketService.on('dog.created', (newDog) => {
+      console.log('[Dashboard] New dog registered:', newDog);
+      
+      // Show notification
+      toast.success(`🐕 New dog registered in ${newDog.zone || 'your area'}!`);
+      
+      // Refresh both stats and recent dogs list
+      fetchDashboardData();
+    });
+
+    // Listen for dog-registered event (legacy)
+    const unsubscribeRegistered = socketService.on('dog-registered', (data) => {
+      console.log('[Dashboard] Dog registered (legacy):', data);
+      toast.success('🐕 New dog registered!');
+      fetchDashboardData();
+    });
+
+    // Listen for dog status changes to update stats
+    const unsubscribeStatusChanged = socketService.on('dog-status-changed', (data) => {
+      console.log('[Dashboard] Dog status changed:', data);
+      
+      // Update the specific dog in the list
+      setDogs(prevDogs => 
+        prevDogs.map(dog => 
+          dog._id === data._id ? { ...dog, ...data } : dog
+        )
+      );
+      
+      // Refresh stats as health status might have changed
+      apiService.getDogsStatistics().then(response => {
+        if (response.success) {
+          setStats(response.data);
+        }
+      }).catch(err => console.error('Error refreshing stats:', err));
+    });
+
+    // Cleanup
+    return () => {
+      unsubscribeCreated();
+      unsubscribeRegistered();
+      unsubscribeStatusChanged();
+    };
+  }, [toast]);
+
 
   const fetchDashboardData = async () => {
     try {
@@ -93,6 +149,13 @@ export default function Dashboard() {
       console.error('Error fetching dashboard data:', error);
       setError(error.message);
       
+      // Show error toast for better UX
+      if (error.message.includes('rate limit') || error.message.includes('Too many')) {
+        toast.warning('Server is busy. Using cached data. Please try again in a moment.');
+      } else {
+        toast.error('Failed to fetch dashboard data. Using demo data.');
+      }
+      
       // Keep mock data for development if API fails
       console.log('Using mock data due to API error');
     } finally {
@@ -103,6 +166,60 @@ export default function Dashboard() {
   const handleDogClick = (dog) => {
     console.log('Dog clicked:', dog);
     // Navigate to dog details page when implemented
+  };
+
+  const handleEdit = (dog) => {
+    setSelectedDog(dog);
+    setEditModalOpen(true);
+  };
+
+  const handleDelete = (dog) => {
+    setSelectedDog(dog);
+    setDeleteModalOpen(true);
+  };
+
+  const handleSaveDog = async (dogId, formData) => {
+    try {
+      const response = await apiService.updateDog(dogId, formData);
+      
+      if (response.success) {
+        toast.success('Dog details updated successfully!');
+        
+        // Update the dog in the local state
+        setDogs(prevDogs => 
+          prevDogs.map(dog => 
+            dog._id === dogId ? { ...dog, ...formData } : dog
+          )
+        );
+        
+        // Refresh dashboard data to get updated stats
+        fetchDashboardData();
+      }
+    } catch (error) {
+      console.error('Error updating dog:', error);
+      toast.error('Failed to update dog details. Please try again.');
+      throw error;
+    }
+  };
+
+  const handleConfirmDelete = async (dogId) => {
+    try {
+      const response = await apiService.deleteDog(dogId);
+      
+      if (response.success) {
+        toast.success('Dog record deleted successfully');
+        
+        // Remove the dog from local state
+        setDogs(prevDogs => prevDogs.filter(dog => dog._id !== dogId));
+        
+        // Refresh dashboard data to get updated stats
+        fetchDashboardData();
+      }
+    } catch (error) {
+      console.error('Error deleting dog:', error);
+      toast.error('Failed to delete dog record. Please try again.');
+      throw error;
+    }
   };
 
   const handleActionClick = (action) => {
@@ -262,6 +379,8 @@ export default function Dashboard() {
           <RecentRegistrations 
             dogs={dogs} 
             onDogClick={handleDogClick}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
             loading={loading}
           />
         </motion.div>
@@ -332,6 +451,27 @@ export default function Dashboard() {
           </div>
         </div>
       </motion.div>
+      
+      {/* Modals */}
+      <EditDogModal
+        dog={selectedDog}
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedDog(null);
+        }}
+        onSave={handleSaveDog}
+      />
+      
+      <DeleteConfirmModal
+        dog={selectedDog}
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setSelectedDog(null);
+        }}
+        onConfirm={handleConfirmDelete}
+      />
     </motion.div>
   );
 }
