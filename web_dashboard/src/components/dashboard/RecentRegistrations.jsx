@@ -5,10 +5,12 @@ import {
   MapPinIcon, 
   HeartIcon,
   ClockIcon,
-  EyeIcon
+  EyeIcon,
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 
-export default function RecentRegistrations({ dogs = [], loading = false, onDogClick }) {
+export default function RecentRegistrations({ dogs = [], loading = false, onDogClick, onEdit, onDelete }) {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -134,10 +136,10 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
                     className="relative"
                     whileHover={{ scale: 1.05 }}
                   >
-                    {dog.photos && dog.photos.length > 0 ? (
+                    {dog.images && dog.images.length > 0 && dog.images[0].url ? (
                       <img
-                        src={dog.photos[0]}
-                        alt={`${dog.name || 'Dog'} photo`}
+                        src={dog.images[0].url}
+                        alt={`${dog.name || dog.dogId || 'Dog'} photo`}
                         className="h-14 w-14 rounded-xl object-cover border-2 border-gray-200 group-hover:border-primary-300 transition-colors duration-200"
                       />
                     ) : (
@@ -148,17 +150,21 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
                     
                     {/* Status indicator */}
                     <div className={`absolute -top-1 -right-1 h-4 w-4 rounded-full border-2 border-white ${
-                      dog.healthStatus === 'injured' ? 'bg-danger-500' :
-                      dog.healthStatus === 'sick' ? 'bg-warning-500' :
+                      dog.healthStatus?.isInjured ? 'bg-danger-500' :
+                      dog.healthStatus?.isHealthy === false ? 'bg-warning-500' :
                       'bg-success-500'
-                    }`} title={`Health status: ${dog.healthStatus || 'healthy'}`}></div>
+                    }`} title={`Health status: ${
+                      dog.healthStatus?.isInjured ? 'Injured' :
+                      dog.healthStatus?.isHealthy === false ? 'Needs attention' :
+                      'Healthy'
+                    }`}></div>
                   </motion.div>
 
                   {/* Dog Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
                       <h3 className="text-sm font-semibold font-heading text-gray-900 truncate">
-                        {dog.name || 'Unnamed'}
+                        {dog.name || dog.dogId || 'Unnamed'}
                       </h3>
                       {dog.breed && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
@@ -168,15 +174,15 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
                     </div>
                     
                     <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      {dog.location && (
-                        <div className="flex items-center space-x-1">
-                          <MapPinIcon className="h-3 w-3" aria-hidden="true" />
-                          <span className="truncate max-w-32">
-                            {typeof dog.location === 'string' ? dog.location : 
-                             dog.location.address || `${dog.location.latitude}, ${dog.location.longitude}`}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center space-x-1">
+                        <MapPinIcon className="h-3 w-3" aria-hidden="true" />
+                        <span className="truncate max-w-32">
+                          {dog.zone || 
+                           dog.address?.area || 
+                           dog.address?.city || 
+                           'Location unknown'}
+                        </span>
+                      </div>
                       
                       {dog.createdAt && (
                         <div className="flex items-center space-x-1">
@@ -188,38 +194,83 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
 
                     {/* Health indicators */}
                     <div className="flex items-center space-x-2 mt-2">
-                      {dog.isVaccinated && (
+                      {dog.healthStatus?.isVaccinated && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-700">
                           Vaccinated
                         </span>
                       )}
-                      {dog.isSterilized && (
+                      {dog.healthStatus?.isSterilized && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700">
                           Sterilized
                         </span>
                       )}
-                      {dog.healthStatus === 'injured' && (
+                      {dog.healthStatus?.isInjured && (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-danger-100 text-danger-700">
                           Needs Attention
+                        </span>
+                      )}
+                      {dog.size && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                          {dog.size.charAt(0).toUpperCase() + dog.size.slice(1)}
+                        </span>
+                      )}
+                      {dog.gender && dog.gender !== 'unknown' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                          {dog.gender.charAt(0).toUpperCase() + dog.gender.slice(1)}
                         </span>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Action Button */}
-                <motion.button
-                  className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDogClick && onDogClick(dog);
-                  }}
-                  aria-label={`View details for ${dog.name || 'dog'}`}
-                >
-                  <EyeIcon className="h-5 w-5" aria-hidden="true" />
-                </motion.button>
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-1">
+                  {onEdit && (
+                    <motion.button
+                      className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(dog);
+                      }}
+                      aria-label={`Edit ${dog.name || dog.dogId || 'dog'}`}
+                      title="Edit dog details"
+                    >
+                      <PencilIcon className="h-4 w-4" aria-hidden="true" />
+                    </motion.button>
+                  )}
+                  
+                  {onDelete && (
+                    <motion.button
+                      className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(dog);
+                      }}
+                      aria-label={`Delete ${dog.name || dog.dogId || 'dog'}`}
+                      title="Delete dog"
+                    >
+                      <TrashIcon className="h-4 w-4" aria-hidden="true" />
+                    </motion.button>
+                  )}
+                  
+                  <motion.button
+                    className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDogClick && onDogClick(dog);
+                    }}
+                    aria-label={`View details for ${dog.name || dog.dogId || 'dog'}`}
+                    title="View details"
+                  >
+                    <EyeIcon className="h-5 w-5" aria-hidden="true" />
+                  </motion.button>
+                </div>
               </div>
             </motion.div>
           ))}

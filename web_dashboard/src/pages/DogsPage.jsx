@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import DogsTable from '../components/tables/DogsTable';
 import apiService from '../services/api';
+import socketService from '../services/socket';
+import { useToast } from '../contexts/ToastContext';
 import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
 
 export default function DogsPage() {
+  const toast = useToast();
   const [dogs, setDogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -51,6 +54,48 @@ export default function DogsPage() {
   useEffect(() => {
     fetchDogs();
   }, [fetchDogs]);
+
+  // Real-time updates: Listen for new dog registrations
+  useEffect(() => {
+    // Listen for dog.created event (emitted by backend when dog is added)
+    const unsubscribeCreated = socketService.on('dog.created', (newDog) => {
+      console.log('[DogsPage] New dog registered:', newDog);
+      
+      // Show notification
+      toast.success(`New dog registered: ${newDog.dogId || 'Unknown'} in ${newDog.zone || 'Unknown zone'}`);
+      
+      // Refresh the current page to show the new dog
+      fetchDogs(pagination.currentPage);
+    });
+
+    // Listen for dog-registered event (alternative event name)
+    const unsubscribeRegistered = socketService.on('dog-registered', (data) => {
+      console.log('[DogsPage] Dog registered (legacy event):', data);
+      toast.success('New dog registered!');
+      fetchDogs(pagination.currentPage);
+    });
+
+    // Listen for dog status changes
+    const unsubscribeStatusChanged = socketService.on('dog-status-changed', (data) => {
+      console.log('[DogsPage] Dog status changed:', data);
+      
+      toast.info('A dog\'s status was updated');
+      
+      // Update the specific dog in the list without full refresh
+      setDogs(prevDogs => 
+        prevDogs.map(dog => 
+          dog._id === data._id ? { ...dog, ...data } : dog
+        )
+      );
+    });
+
+    // Cleanup listeners on unmount
+    return () => {
+      unsubscribeCreated();
+      unsubscribeRegistered();
+      unsubscribeStatusChanged();
+    };
+  }, [fetchDogs, pagination.currentPage, toast]);
 
   // fetchDogs is memoized; keep reference for pagination buttons
 

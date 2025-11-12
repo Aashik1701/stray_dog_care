@@ -96,6 +96,15 @@ const authReducer = (state, action) => {
 const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
+  // Sync token with apiService whenever it changes
+  useEffect(() => {
+    if (state.token) {
+      apiService.setToken(state.token);
+    } else {
+      apiService.setToken(null);
+    }
+  }, [state.token]);
+
   // Load user on app start
   useEffect(() => {
     loadUser();
@@ -103,31 +112,30 @@ const AuthProvider = ({ children }) => {
 
   // Auto-login function for demo purposes
   const autoLogin = useCallback(async () => {
-    const demoUser = {
-      _id: 'demo-user-web-' + Date.now(),
-      username: 'demo_user',
-      email: 'demo@straydogcare.com',
-      role: 'field_worker',
-      permissions: ['create_dog', 'edit_dog'],
-      profile: {
-        firstName: 'Demo',
-        lastName: 'User',
-        phoneNumber: '1234567890'
-      },
-      isActive: true,
-      isEmailVerified: true
-    };
+    try {
+      // Try to login with test account
+      const response = await apiService.login({
+        email: 'worker@dogster.com',
+        password: 'worker123'
+      });
 
-    const demoToken = 'demo-token-web-' + Date.now();
-
-    // Store demo token and user
-    localStorage.setItem('token', demoToken);
-    apiService.setToken(demoToken);
-
-    dispatch({
-      type: AUTH_ACTIONS.LOGIN_SUCCESS,
-      payload: { user: demoUser, token: demoToken }
-    });
+      if (response.success) {
+        dispatch({
+          type: AUTH_ACTIONS.LOGIN_SUCCESS,
+          payload: response.data
+        });
+        console.log('✅ Auto-logged in with test account');
+      } else {
+        throw new Error('Test account login failed');
+      }
+    } catch (error) {
+      console.error('❌ Auto-login failed:', error);
+      // If test account doesn't exist, show not authenticated state
+      dispatch({
+        type: AUTH_ACTIONS.LOGIN_FAILURE,
+        payload: 'Please login with valid credentials'
+      });
+    }
   }, []);
 
   // Load user profile
