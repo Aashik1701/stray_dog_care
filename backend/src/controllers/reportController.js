@@ -213,3 +213,135 @@ exports.getReportById = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Failed to fetch report' });
   }
 };
+
+// GET /api/reports/analytics
+// Aggregated NLP insights to power the Analytics dashboard
+exports.getReportsAnalytics = async (req, res) => {
+  try {
+    const { from, to, minUrgency } = req.query || {};
+    const match = {};
+    if (from || to) {
+      match.created_at = {};
+      if (from) match.created_at.$gte = new Date(String(from));
+      if (to) match.created_at.$lte = new Date(String(to));
+    }
+    if (minUrgency) {
+      const v = parseFloat(String(minUrgency));
+      if (!Number.isNaN(v)) match.urgency_score = { $gte: v };
+    }
+
+    // Sentiment by day
+    const sentimentByDay = await Report.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: {
+            day: { $dateToString: { format: '%Y-%m-%d', date: '$created_at' } },
+            sentiment: '$sentiment.label',
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { '_id.day': 1 } },
+    ]);
+
+    // Urgency histogram (4 buckets)
+    const urgencyBuckets = await Report.aggregate([
+      { $match: match },
+      {
+        $bucket: {
+          groupBy: '$urgency_score',
+          boundaries: [0, 0.25, 0.5, 0.75, 1.000001],
+          default: 'unknown',
+          output: { count: { $sum: 1 } },
+        },
+      },
+    ]);
+
+    // Top symptoms (entities.type == 'symptom')
+    const topSymptoms = await Report.aggregate([
+      { $match: match },
+      { $unwind: '$entities' },
+      { $match: { 'entities.type': 'symptom' } },
+      {
+        $group: {
+          _id: { $toLower: '$entities.text' },
+          count: { $sum: 1 },
+          avgUrgency: { $avg: '$urgency_score' },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 15 },
+    ]);
+
+    // Top locations by location_hint.area
+    const topLocations = await Report.aggregate([
+      { $match: { ...match, 'location_hint.area': { $ne: null } } },
+      {
+        $group: {
+          _id: { $toLower: '$location_hint.area' },
+          count: { $sum: 1 },
+          avgUrgency: { $avg: '$urgency_score' },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 15 },
+    ]);
+
+    // Duplicate rate and examples
+    const [totalReports, duplicateReports, recentDuplicates] = await Promise.all([
+      Report.countDocuments(match),
+      Report.countDocuments({ ...match, duplicate_of: { $ne: null } }),
+      Report.find({ ...match, duplicate_of: { $ne: null } })
+        .sort({ created_at: -1 })
+        .limit(10)
+        .select('raw_text summary urgency_score created_at duplicate_of')
+        .lean(),
+    ]);
+
+    const duplicateRate = totalReports > 0 ? duplicateReports / totalReports : 0;
+
+    // Topics from classification labels
+    const topics = await Report.aggregate([
+      { $match: match },
+      { $unwind: { path: '$classification', preserveNullAndEmptyArrays: false } },
+      {
+        $group: {
+          _id: { $toLower: '$classification.label' },
+          count: { $sum: 1 },
+          avgScore: { $avg: '$classification.score' },
+          avgUrgency: { $avg: '$urgency_score' },
+        },
+      },
+      { $sort: { count: -1, avgScore: -1 } },
+      { $limit: 12 },
+    ]);
+
+    // Recent high-urgency
+    const recentHighUrgency = await Report.find({ ...match, urgency_score: { $gte: 0.75 } })
+      .sort({ created_at: -1 })
+      .limit(8)
+      .select('summary raw_text urgency_score created_at location_hint.area sentiment.label')
+      .lean();
+
+    return res.json({
+      success: true,
+      data: {
+        totals: {
+          totalReports,
+          duplicateReports,
+          duplicateRate,
+        },
+        sentimentByDay,
+        urgencyBuckets,
+        topSymptoms,
+        topLocations,
+        topics,
+        recentHighUrgency,
+      },
+    });
+  } catch (e) {
+    console.error('[reports] analytics error:', e);
+    return res.status(500).json({ success: false, message: 'Failed to compute analytics' });
+  }
+};

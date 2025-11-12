@@ -297,6 +297,13 @@ class ApiService {
     }
     return this.request('/nlp/status');
   }
+
+  // Reports analytics
+  async getReportsAnalytics(params = {}) {
+    const qs = new URLSearchParams(params).toString();
+    const endpoint = qs ? `/reports/analytics/summary?${qs}` : '/reports/analytics/summary';
+    return this.request(endpoint);
+  }
 }
 
 export default new ApiService();
