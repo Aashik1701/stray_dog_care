@@ -269,10 +269,23 @@ export default function AddDogScreen({ navigation }) {
   };
 
   const handleSubmit = async () => {
-    if (!dogData.size) return Alert.alert('Validation', 'Please enter size');
+    // Validate required fields
+    if (!dogData.size) return Alert.alert('Validation', 'Please select size');
     if (!coords) return Alert.alert('Location', 'Location not available yet');
-    if (!dogData.zone) return Alert.alert('Validation', 'Please enter zone');
+    if (!dogData.zone || !dogData.zone.trim()) return Alert.alert('Validation', 'Please enter zone');
     if (aiAutofill && !dogData.notes) return Alert.alert('Notes required', 'Please add some notes to auto-fill with AI.');
+
+    // Validate enum values
+    const validSizes = ['small', 'medium', 'large'];
+    const validGenders = ['male', 'female', 'unknown'];
+    
+    if (!validSizes.includes(dogData.size)) {
+      return Alert.alert('Invalid Size', 'Please select a valid size: small, medium, or large');
+    }
+    
+    if (dogData.gender && !validGenders.includes(dogData.gender)) {
+      return Alert.alert('Invalid Gender', 'Please select a valid gender: male, female, or unknown');
+    }
 
     setSubmitting(true);
     try {
@@ -316,18 +329,27 @@ export default function AddDogScreen({ navigation }) {
       }
 
       // 2) Create dog with uploaded image metadata
+      // Sanitize and ensure only valid enum values are sent
       const payload = {
-        size: dogData.size,
-        color: dogData.color || undefined,
-        gender: dogData.gender || undefined,
+        size: dogData.size, // Already validated above
+        color: dogData.color?.trim() || undefined,
+        gender: dogData.gender || undefined, // Already validated above
         // Keep root-level notes for backward compatibility
-        notes: dogData.notes || undefined,
+        notes: dogData.notes?.trim() || undefined,
         // Provide notes to healthStatus for NLP pipeline
-        healthStatus: dogData.notes ? { notes: dogData.notes } : undefined,
-        zone: dogData.zone,
+        healthStatus: dogData.notes?.trim() ? { notes: dogData.notes.trim() } : undefined,
+        zone: dogData.zone.trim(),
         coordinates: [coords.longitude, coords.latitude],
         images: uploadedImages,
       };
+      
+      // Remove undefined values to avoid sending them to the API
+      Object.keys(payload).forEach(key => {
+        if (payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
+      
       // If AI autofill is enabled and notes are provided, use NLP-assisted endpoint
       const useNLP = aiAutofill && !!dogData.notes;
       const endpoint = useNLP ? '/dogs/nlp' : '/dogs';
@@ -337,7 +359,8 @@ export default function AddDogScreen({ navigation }) {
       navigation.navigate('Home');
     } catch (e) {
       console.log(e?.response?.data || e.message);
-      Alert.alert('Error', e?.response?.data?.message || 'Failed to register dog');
+      const errorMsg = e?.response?.data?.message || e?.response?.data?.error || e?.message || 'Failed to register dog';
+      Alert.alert('Error', errorMsg);
     } finally {
       setSubmitting(false);
       setNlpLoading(false);
@@ -415,10 +438,60 @@ export default function AddDogScreen({ navigation }) {
             )}
           </View>
         </View>
-        <TextInput placeholder="Size (small/medium/large)" style={styles.input} value={dogData.size} onChangeText={(t)=>setDogData(s=>({ ...s, size: t }))} />
-        <TextInput placeholder="Color" style={styles.input} value={dogData.color} onChangeText={(t)=>setDogData(s=>({ ...s, color: t }))} />
-        <TextInput placeholder="Gender" style={styles.input} value={dogData.gender} onChangeText={(t)=>setDogData(s=>({ ...s, gender: t }))} />
-        <TextInput placeholder="Zone (e.g., Zone 7)" style={styles.input} value={dogData.zone} onChangeText={(t)=>setDogData(s=>({ ...s, zone: t }))} />
+        
+        {/* Size Selector */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.fieldLabel}>Size *</Text>
+          <View style={styles.buttonGroup}>
+            {['small', 'medium', 'large'].map((sizeOption) => (
+              <TouchableOpacity
+                key={sizeOption}
+                style={[
+                  styles.optionButton,
+                  dogData.size === sizeOption && styles.optionButtonSelected
+                ]}
+                onPress={() => setDogData(s => ({ ...s, size: sizeOption }))}
+              >
+                <Text style={[
+                  styles.optionButtonText,
+                  dogData.size === sizeOption && styles.optionButtonTextSelected
+                ]}>
+                  {sizeOption.charAt(0).toUpperCase() + sizeOption.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Color Input */}
+        <TextInput placeholder="Color (e.g., brown, white, black)" style={styles.input} value={dogData.color} onChangeText={(t)=>setDogData(s=>({ ...s, color: t }))} />
+        
+        {/* Gender Selector */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.fieldLabel}>Gender</Text>
+          <View style={styles.buttonGroup}>
+            {['male', 'female', 'unknown'].map((genderOption) => (
+              <TouchableOpacity
+                key={genderOption}
+                style={[
+                  styles.optionButton,
+                  dogData.gender === genderOption && styles.optionButtonSelected
+                ]}
+                onPress={() => setDogData(s => ({ ...s, gender: genderOption }))}
+              >
+                <Text style={[
+                  styles.optionButtonText,
+                  dogData.gender === genderOption && styles.optionButtonTextSelected
+                ]}>
+                  {genderOption.charAt(0).toUpperCase() + genderOption.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Zone Input */}
+        <TextInput placeholder="Zone (e.g., Zone 7) *" style={styles.input} value={dogData.zone} onChangeText={(t)=>setDogData(s=>({ ...s, zone: t }))} />
         {/* Zone suggestions from AI */}
         {!!(aiAutofill && preview?.entities?.locations?.length) && (
           <View style={styles.suggestionRow}>
@@ -625,6 +698,32 @@ const styles = StyleSheet.create({
   },
   locationText: { fontSize: 14, color: '#166534' },
   input: { borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 8, padding: 10, marginBottom: 8, backgroundColor: '#fff' },
+  fieldContainer: { marginBottom: 12 },
+  fieldLabel: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 8 },
+  buttonGroup: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  optionButton: { 
+    flex: 1,
+    minWidth: 90,
+    paddingVertical: 10, 
+    paddingHorizontal: 16, 
+    borderWidth: 2, 
+    borderColor: '#e5e7eb', 
+    borderRadius: 8, 
+    backgroundColor: '#fff',
+    alignItems: 'center'
+  },
+  optionButtonSelected: { 
+    backgroundColor: '#dbeafe', 
+    borderColor: '#3b82f6' 
+  },
+  optionButtonText: { 
+    fontSize: 14, 
+    color: '#6b7280', 
+    fontWeight: '600' 
+  },
+  optionButtonTextSelected: { 
+    color: '#1d4ed8' 
+  },
   languageSelector: { marginBottom: 12 },
   languageLabel: { fontSize: 14, fontWeight: '600', color: '#111827', marginBottom: 6 },
   languageScroll: { marginBottom: 4 },
