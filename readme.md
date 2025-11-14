@@ -1,307 +1,566 @@
-Dogster Monorepo
+# Stray Dog Care Management System
 
-Structure
-- StrayDogApp/ — Expo React Native app (TypeScript)
-- backend/ — Express + Mongoose API
+> AI-powered platform for systematic animal welfare and public health management
 
-Quick start
-1) Backend
-   - Copy backend/.env.example to backend/.env and set MONGODB_URI (or skip to run without DB connectivity).
-   - Install deps and run: npm install; npm run dev
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![React Native](https://img.shields.io/badge/React%20Native-0.76+-61DAFB?logo=react)](https://reactnative.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-22+-339933?logo=node.js)](https://nodejs.org/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb)](https://www.mongodb.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
 
-2) Mobile app
-   - In StrayDogApp: npm install; npm run start
-   - Configure API URL in StrayDogApp/app.json -> expo.extra.apiUrl
+[Features](#key-features) • [Architecture](#architecture) • [Quick Start](#quick-start) • [API Documentation](#api-documentation) • [Contributing](#contributing)
 
-API
-- GET /api/dogs — list recent dogs
-- POST /api/dogs — create dog { name?, location: { address? } }
+---
 
-# COMPLETE STUDENT TECH FRAMEWORK
-## Build a Professional Stray Dog Management App
+## Overview
 
-### 🎯 PROJECT OVERVIEW
-You'll build a comprehensive mobile and web application that addresses India's stray dog crisis using modern technology. This isn't just a student project - it's a real-world solution that could impact millions of lives.
+A comprehensive digital ecosystem for stray dog population management through AI/NLP-powered insights, real-time coordination, and data-driven decision making. This platform addresses India's stray dog crisis affecting 60–80 million animals and causing 18,000+ annual rabies deaths.
 
-### 💡 WHY THIS PROJECT IS PERFECT FOR STUDENTS
+### Problem Statement
 
-#### Career Benefits
-- **Portfolio Differentiator**: Solve real social problems, not just todo apps
-- **Full-Stack Experience**: Mobile, web, backend, AI, deployment
-- **Industry-Ready Skills**: React Native, Node.js, AI/ML are in high demand
-- **Measurable Impact**: Track your app's real-world usage and benefits
+- Managing 180,000+ stray dogs in urban centers (Chennai model)
+- India accounts for 36% of global rabies deaths (3.7M annual bite cases)
+- ₹8.6 billion annual burden on healthcare and municipal budgets
+- Current manual systems cannot match population growth rates
 
-#### Learning Advantages
-- **Progressive Complexity**: Start simple, add advanced features gradually
-- **Modern Tech Stack**: Learn technologies used by top companies
-- **Free Development**: $0 cost during development phase
-- **Excellent Documentation**: All chosen technologies have great learning resources
+### Solution Approach
 
-### 🏗️ ARCHITECTURE OVERVIEW
+The platform provides:
 
-#### Frontend Applications
-**Mobile App (React Native + Expo)**
-- Cross-platform (iOS + Android from single codebase)
-- Field worker interface for dog registration and tracking
-- GPS integration, camera, real-time updates
-- Offline capability for areas with poor connectivity
+- Population control: Systematic tracking and sterilization management with 85% coverage targets
+- Public health: Rabies prevention, bite incident reduction, and disease outbreak monitoring
+- Data intelligence: NLP-driven analytics, predictive modeling, and resource optimization
+- Community coordination: Unified platform connecting NGOs, government bodies, field workers, and citizens
+- Transparency: Real-time fund utilization tracking and impact measurement
 
-**Web Dashboard (React.js + Material-UI)**
-- Admin panel for managing data and users
-- Real-time analytics and visualization
-- Population tracking and reporting
-- Resource allocation and planning tools
+---
 
-#### Backend Infrastructure
-**API Server (Node.js + Express)**
-- RESTful API design with clear endpoints
-- Authentication and authorization
-- File upload and processing
-- Real-time features with Socket.io
+## Key Features
 
-**Database Layer**
-- **MongoDB Atlas**: Primary data storage (free 512MB)
-- **PostgreSQL/Supabase**: Analytics and reporting (free 500MB)
-- **Redis**: Caching and session management (when needed)
+### Natural Language Processing
 
-#### AI/ML Services
-**Computer Vision (TensorFlow.js + MediaPipe)**
-- Automatic dog identification from photos
-- Health assessment from visual indicators
-- Population counting and density mapping
+The system integrates IndicBERT for multilingual text analysis:
 
-**Predictive Analytics (Python + scikit-learn)**
-- Population growth forecasting
-- Resource needs prediction
-- Conflict hotspot identification
+- Sentiment analysis with positive/negative/neutral classification
+- Automated urgency scoring (0–1 scale) for incident prioritization
+- Entity extraction for breeds, locations, and symptoms
+- Report categorization (injury, adoption, sterilization, bite incidents)
+- Duplicate detection using vector embeddings and cosine similarity
 
-#### External Services Integration
-- **Firebase Auth**: User authentication (50K users free)
-- **Cloudinary**: Image storage and optimization (25GB free)
-- **Mapbox**: Maps and geolocation (50K requests free)
-- **Sentry**: Error monitoring (5K errors free)
+### Duplicate Detection System
 
-### 📈 DEVELOPMENT PHASES (20-week plan)
+Advanced similarity detection prevents redundant reports:
 
-#### Phase 1: Foundation (Weeks 1-4)
-**Core Setup & Basic CRUD**
-- Project initialization and environment setup
-- Basic mobile app with navigation
-- Simple backend API with database
-- User authentication system
-- Dog registration form with location
+- Sentence-Transformers generate 384-dimensional embeddings
+- MongoDB Atlas Vector Search with cosine similarity threshold of 0.82
+- Spatial clustering with zone-based candidate filtering (30-day windows)
+- Conflict resolution with 409 HTTP responses and similar case suggestions
 
-**Key Deliverables:**
-- Working mobile app that can register dogs
-- Backend API with database connection
-- Basic authentication system
-- GPS location capture
+### Analytics Dashboard
 
-#### Phase 2: Core Features (Weeks 5-10)
-**Essential Functionality**
-- Image upload and storage
-- Map integration with markers
-- Real-time updates between users
-- Basic search and filtering
-- Dog profile management
+Real-time insights for decision makers:
 
-**Key Deliverables:**
-- Photo capture and upload functionality
-- Interactive map with dog locations
-- Real-time notifications
-- Search dogs by location/status
+- Daily sentiment trend analysis across geographic zones
+- Urgency distribution heatmaps for resource allocation
+- Topic modeling and automated theme classification
+- Health issue tracking with symptom entity extraction
+- Location-based hotspot detection for targeted interventions
+- Duplicate rate monitoring and prevention metrics
 
-#### Phase 3: Advanced Features (Weeks 11-14)
-**Web Dashboard & Analytics**
-- Admin web application
-- Data visualization and reporting
-- User management system
-- Advanced database queries
-- Export and reporting features
+### Mobile Application
 
-**Key Deliverables:**
-- Professional web dashboard
-- Population analytics and charts
-- User role management
-- Data export capabilities
+Cross-platform React Native app for field operations:
 
-#### Phase 4: AI Integration (Weeks 15-18)
-**Smart Features**
-- Dog identification from photos
-- Basic health assessment
-- Population prediction algorithms
-- Automated insights and recommendations
+- Multi-photo capture with automatic compression and metadata tagging
+- GPS integration with ±5m coordinate accuracy for territorial return tracking
+- Offline-first architecture using SQLite with automatic cloud sync
+- Real-time updates via Socket.IO for team coordination
+- Voice-to-text speech recognition for hands-free reporting
+- AI-suggested route optimization for daily field operations
+- Push notifications for emergency alerts and assignment updates
 
-**Key Deliverables:**
-- AI-powered dog recognition
-- Health status assessment
-- Population growth predictions
-- Automated reporting features
+### Web Dashboard
 
-#### Phase 5: Production (Weeks 19-20)
-**Deployment & Polish**
-- Cloud deployment setup
-- Performance optimization
-- Security hardening
-- Documentation and testing
-- App store preparation
+React-based administrative interface:
 
-**Key Deliverables:**
-- Live deployed application
-- Performance monitoring
-- Security measures implemented
-- Complete documentation
+- Live analytics with population statistics and health metrics
+- Interactive Mapbox integration with clustering and heatmaps
+- Advanced charting using Recharts for trend analysis
+- Role-based access control (field workers, coordinators, admins, veterinarians)
+- Budget tracking with fund allocation and utilization monitoring
+- Automated PDF report generation for government compliance
+- Semantic search with natural language query support
 
-### 💰 COST ANALYSIS
+### Backend Architecture
 
-#### Development Phase (Weeks 1-20)
-**Total Cost: $0-15**
-- All services have generous free tiers
-- Optional: Domain name ($10-15/year)
-- Everything else runs on free plans
+Node.js/Express API with Python microservices:
 
-#### Production Phase (After launch)
-**Monthly Cost: $5-25**
-- Railway backend hosting: $5/month
-- Additional storage if needed: $5-15/month
-- Domain renewal: $1/month
-- Monitoring tools: $0 (free tiers sufficient)
+- RESTful API with 50+ endpoints
+- JWT authentication and role-based authorization
+- MongoDB Atlas with geospatial and vector indexes
+- Socket.IO for real-time bidirectional communication
+- FastAPI NLP service on port 8000 with circuit breaker pattern
+- Security: Helmet.js, CORS, rate limiting (100 requests/15 minutes)
+- Logging via Morgan with Sentry error monitoring
+- Compression middleware and optional Redis caching
 
-#### Annual Cost Projection
-**Year 1: $60-300** (extremely affordable for a production app)
-**Year 2+: $100-400** (includes scaling for growth)
+---
 
-### 🛠️ GETTING STARTED TODAY
+## Architecture
 
-#### Immediate Setup (30 minutes)
-1. **Install Prerequisites**
-   ```bash
-   # Install Node.js from nodejs.org
-   # Install Git from git-scm.com
-   # Install VS Code from code.visualstudio.com
-   ```
+### System Design
 
-2. **Create Mobile App**
-   ```bash
-   npm install -g expo-cli
-   expo init StrayDogApp
-   cd StrayDogApp
-   expo start
-   ```
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                          CLIENT LAYER                               │
+├──────────────────────────┬──────────────────────────────────────────┤
+│   Mobile App (Expo)      │    Web Dashboard (React+Vite)            │
+│   - React Native 0.76+   │    - React 19 + TailwindCSS 3.4          │
+│   - Offline-first        │    - Recharts + Framer Motion            │
+│   - GPS + Camera         │    - Socket.IO Client                    │
+└──────────────────────────┴──────────────────────────────────────────┘
+                                    ↕ HTTPS + WebSocket
+┌─────────────────────────────────────────────────────────────────────┐
+│                         API GATEWAY                                 │
+│                  Express 4.21 + Socket.IO 4.8                       │
+│   - JWT Auth + RBAC      - Rate Limiting                            │
+│   - CORS + Helmet        - File Upload (Multer)                     │
+└─────────────────────────────────────────────────────────────────────┘
+              ↕                          ↕                    ↕
+┌──────────────────────┐   ┌────────────────────┐   ┌─────────────────┐
+│   MongoDB Atlas      │   │  NLP Service       │   │  External APIs  │
+│   - Dogs Collection  │   │  FastAPI 0.115     │   │  - Cloudinary   │
+│   - Reports (Vector) │   │  - IndicBERT       │   │  - Mapbox       │
+│   - Users + Orgs     │   │  - Transformers    │   │  - Firebase     │
+│   - 2dsphere Index   │   │  - Vector Embed    │   │  - Sentry       │
+└──────────────────────┘   └────────────────────┘   └─────────────────┘
+```
 
-3. **Create Backend**
-   ```bash
-   mkdir stray-dog-backend
-   cd stray-dog-backend
-   npm init -y
-   npm install express mongoose cors dotenv
-   ```
+### Technology Stack
 
-4. **Setup Database**
-   - Create MongoDB Atlas account (free)
-   - Create cluster and get connection string
-   - Add to .env file in backend
+| Layer    | Technologies                                           | Purpose                                           |
+|----------|--------------------------------------------------------|---------------------------------------------------|
+| Mobile   | React Native 0.76, Expo 52, TypeScript                | Cross-platform iOS/Android with native capabilities |
+| Web      | React 19, Vite 7, TailwindCSS 3.4, Recharts 3.1      | Fast, responsive dashboard with rich visualizations |
+| Backend  | Node.js 22, Express 4.21, Socket.IO 4.8              | Scalable API with real-time features              |
+| NLP      | FastAPI 0.115, IndicBERT, Sentence-Transformers      | Multilingual NLP processing and embeddings        |
+| Database | MongoDB Atlas 8.0 (Vector Search enabled)            | Flexible schemas with geospatial and vector indexes |
+| Storage  | Cloudinary, AWS S3 (optional)                        | Image CDN with automatic optimization             |
+| Maps     | Mapbox GL JS 3.0, React Google Maps API              | Interactive mapping and geocoding                 |
+| Auth     | JWT, bcrypt, express-rate-limit                      | Secure authentication and rate limiting           |
+| DevOps   | Git, Docker (optional), Railway/Render               | Version control and cloud deployment              |
 
-#### First Feature to Build
-**Dog Registration Form**
-- Simple form with dog photo, location, basic info
-- Store in database with GPS coordinates
-- Display on map with markers
-- This is your MVP - everything else builds on this
+### Data Flow
 
-### 📚 LEARNING RESOURCES
+```
+┌─────────────┐                    ┌─────────────┐
+│   Client    │───── HTTPS ───────▶│  Express    │
+│ (Mobile/Web)│◀──── WS/SSE ───────│   Server    │
+└─────────────┘                    └──────┬──────┘
+                                          │
+                     ┌────────────────────┼────────────────────┐
+                     ▼                    ▼                    ▼
+              ┌─────────────┐      ┌─────────────┐    ┌──────────────┐
+              │   MongoDB   │      │  FastAPI    │    │  Cloudinary  │
+              │   (Atlas)   │      │  NLP Svc    │    │   (Images)   │
+              │             │      │             │    │              │
+              │ • Dogs      │      │ • IndicBERT │    │ • Photos     │
+              │ • Reports   │      │ • Embeddings│    │ • Transforms │
+              │ • Users     │      │ • Sentiment │    │ • CDN        │
+              └─────────────┘      └─────────────┘    └──────────────┘
+```
 
-#### Free Resources (90% of what you need)
-- **React Native**: Official documentation + Expo guides
-- **Node.js/Express**: Official tutorials + freeCodeCamp
-- **MongoDB**: MongoDB University (free courses)
-- **React**: Official tutorial + React documentation
-- **AI/ML**: TensorFlow.js tutorials + Google AI courses
+---
 
-#### Technical Skills
-- **Frontend Development**: React, React Native, responsive design
-- **Backend Development**: Node.js, Express, RESTful APIs
-- **Database Management**: MongoDB, PostgreSQL, query optimization
-- **Mobile Development**: Cross-platform apps, GPS, camera
-- **AI/ML Integration**: Computer vision, predictive analytics
-- **Cloud Deployment**: Modern hosting, CI/CD, monitoring
+## Quick Start
 
-#### Professional Skills
-- **Project Management**: Planning, execution, delivery
-- **Problem Solving**: Real-world challenges, debugging
-- **Documentation**: Technical writing, API documentation
-- **Collaboration**: Version control, code review
-- **Product Thinking**: User experience, feature prioritization
+### Prerequisites
 
-### 🚀 CAREER IMPACT
+- Node.js 22+ (https://nodejs.org/)
+- Python 3.9+ (https://www.python.org/downloads/)
+- MongoDB Atlas account (https://www.mongodb.com/cloud/atlas/register)
+- Git (https://git-scm.com/downloads)
 
-#### Job Market Relevance
-- **High Demand**: React Native developers earn $70K-120K+
-- **Full-Stack Appeal**: Companies love developers who can do everything
-- **AI/ML Experience**: Fastest growing tech field
-- **Social Impact**: ESG and social responsibility are trending
+### Installation
 
-#### Portfolio Advantages
-- **Real Problem**: Not another clone or tutorial project
-- **Technical Depth**: Shows mastery of complex technologies
-- **Social Impact**: Demonstrates values and problem-solving
-- **Complete Solution**: End-to-end thinking and execution
+1. Clone the repository
 
-#### Interview Talking Points
-- "Built production app solving India's stray dog crisis"
-- "Integrated AI for population prediction and health assessment"
-- "Deployed scalable system handling thousands of users"
-- "Created measurable social impact with technology"
+```bash
+git clone https://github.com/Aashik1701/stray_dog_care.git
+cd stray_dog_care
+```
 
-### ⚡ SUCCESS TIPS
+2. Backend setup
 
-#### Start Smart
-- **MVP First**: Build core feature (dog registration) before anything else
-- **Learn by Doing**: Don't spend weeks just watching tutorials
-- **Deploy Early**: Get something online ASAP, then iterate
-- **Document Everything**: For your future self and your portfolio
+```bash
+cd backend
+npm install
 
-#### Stay Motivated
-- **Track Progress**: Keep a development journal
-- **Share Updates**: Post progress on social media, LinkedIn
-- **Join Communities**: Connect with other developers
-- **Measure Impact**: Track real usage when deployed
+# Create .env file
+cat > .env << 'EOF'
+PORT=5000
+MONGODB_URI=your_mongodb_connection_string
+JWT_SECRET=your_jwt_secret_key_here
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+NLP_SERVICE_URL=http://localhost:8000
+EOF
 
-#### Avoid Common Pitfalls
-- **Don't Overengineer**: Start simple, add complexity later
-- **Don't Skip Testing**: Write tests from the beginning
-- **Don't Ignore Security**: Use proper authentication and validation
-- **Don't Work Alone**: Get feedback early and often
+npm run dev
+```
 
-### 🌟 FINAL MOTIVATION
+Backend runs on http://localhost:5000
 
-This isn't just a coding project - it's a chance to:
-- **Solve Real Problems**: Help reduce rabies deaths and improve animal welfare
-- **Build Valuable Skills**: Technologies used by top companies
-- **Create Portfolio Piece**: Stand out from other developers
-- **Make Social Impact**: Use technology for good
-- **Prepare for Career**: Full-stack, AI, mobile experience
+3. NLP service setup
 
-**The best time to start was yesterday. The second best time is right now.**
+```bash
+cd nlp_service
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-### 📁 ALL FILES CREATED FOR YOU
+pip install -r requirements.txt
+python main.py
+```
 
-1. **student_tech_stack.csv** - Technology comparison and features
-2. **development_phases.csv** - Week-by-week development plan  
-3. **cost_breakdown.csv** - Detailed cost analysis
-4. **student_implementation_guide.md** - Complete code examples
-5. **quick_start_guide.md** - 30-minute setup instructions
-6. **learning_roadmap.md** - Skills development strategy
-7. **Architecture diagram** - Visual system overview
+NLP service runs on http://localhost:8000
 
-### 🎯 YOUR NEXT ACTIONS
+4. Web dashboard setup
 
-1. **Today**: Run the quick start guide, get basic app running
-2. **This Week**: Complete Phase 1 setup, first dog registration form
-3. **This Month**: Working MVP with core features
-4. **In 3 Months**: Full featured app ready for production
-5. **In 6 Months**: Deployed app with users and social impact
+```bash
+cd web_dashboard
+npm install
 
-**Remember: Every expert was once a beginner. Every professional started with their first project. This could be yours.**
+echo "VITE_API_URL=http://localhost:5000" > .env
 
-**Start building. Start learning. Start making a difference. 🚀**
+npm run dev
+```
+
+Web dashboard runs on http://localhost:5173
+
+5. Mobile app setup
+
+```bash
+cd StrayDogApp
+npm install
+
+# Configure API URL in app.config.js
+# Update expo.extra.apiUrl to your backend URL
+
+npm start
+```
+
+Access via Expo Go app on your mobile device.
+
+---
+
+## API Documentation
+
+### Authentication Endpoints
+
+```http
+POST /api/auth/register     # Create new user account
+POST /api/auth/login        # Login and receive JWT token
+GET  /api/auth/profile      # Retrieve current user profile
+PUT  /api/auth/profile      # Update profile information
+```
+
+### Dogs Management
+
+```http
+GET    /api/dogs              # List all dogs (paginated)
+POST   /api/dogs              # Register new dog with NLP enrichment
+GET    /api/dogs/:id          # Get dog details by ID
+PUT    /api/dogs/:id          # Update dog information
+DELETE /api/dogs/:id          # Remove dog record
+GET    /api/dogs/search       # Search dogs by location or criteria
+```
+
+### Reports and Incidents
+
+```http
+GET    /api/reports           # List all reports
+POST   /api/reports           # Submit new report with NLP analysis
+GET    /api/reports/:id       # Get report details
+PUT    /api/reports/:id       # Update report status
+DELETE /api/reports/:id       # Delete report
+GET    /api/reports/analytics/summary  # Analytics dashboard data
+```
+
+### NLP Operations
+
+```http
+POST /api/nlp/analyze         # Analyze text for sentiment and urgency
+POST /api/nlp/find-duplicates # Find similar reports or dogs
+GET  /api/nlp/health          # Check NLP service status
+```
+
+### Environment Configuration
+
+Backend (.env):
+
+```bash
+PORT=5000
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/stray_dog_care
+JWT_SECRET=your_secret_key_min_32_characters
+JWT_EXPIRATION=7d
+
+# Cloudinary Configuration
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# NLP Service
+NLP_SERVICE_URL=http://localhost:8000
+NLP_TIMEOUT_MS=10000
+
+# Optional Services
+MAPBOX_TOKEN=your_mapbox_token
+SENTRY_DSN=your_sentry_dsn
+```
+
+Web Dashboard (.env):
+
+```bash
+VITE_API_URL=http://localhost:5000
+VITE_SOCKET_URL=http://localhost:5000
+VITE_MAPBOX_TOKEN=your_mapbox_token
+```
+
+Mobile App (app.config.js):
+
+```javascript
+export default {
+  expo: {
+    extra: {
+      apiUrl: "http://YOUR_IP:5000", // Use local IP, not localhost
+      socketUrl: "http://YOUR_IP:5000",
+    },
+  },
+};
+```
+
+---
+
+## Database Schema
+
+### Users Collection
+
+```javascript
+{
+  _id: ObjectId,
+  name: String,
+  email: String, // unique
+  password: String, // hashed
+  role: String, // 'admin', 'coordinator', 'field_worker', 'veterinarian'
+  organization: ObjectId, // ref: 'Organization'
+  permissions: [String], // e.g. ['view_analytics', 'manage_users']
+  createdAt: Date,
+  updatedAt: Date,
+}
+```
+
+### Dogs Collection
+
+```javascript
+{
+  _id: ObjectId,
+  name: String,
+  breed: String,
+  color: String,
+  gender: String,
+  age: String,
+  healthStatus: String,
+  sterilized: Boolean,
+  vaccinated: Boolean,
+  location: {
+    type: "Point",
+    coordinates: [longitude, latitude],
+    address: String,
+    zone: String,
+  },
+  photos: [String], // Cloudinary URLs
+  notes: String,
+  registeredBy: ObjectId, // ref: 'User'
+  createdAt: Date,
+  updatedAt: Date,
+}
+
+// Indexes
+db.dogs.createIndex({ location: "2dsphere" })
+db.dogs.createIndex({ zone: 1, createdAt: -1 })
+```
+
+### Reports Collection
+
+Vector search enabled for duplicate detection.
+
+```javascript
+{
+  _id: ObjectId,
+  description: String,
+  reportType: String, // 'injury', 'sterilization', 'adoption', 'bite_incident'
+  urgency: Number, // 0-1 (NLP-generated)
+  sentiment: String, // 'positive', 'negative', 'neutral'
+  entities: {
+    symptoms: [String], // Extracted by NLP
+    locations: [String],
+    topics: [String],
+  },
+  embedding: [Number], // 384-dimensional vector
+  location: {
+    type: "Point",
+    coordinates: [longitude, latitude],
+    address: String,
+  },
+  status: String, // 'pending', 'in_progress', 'resolved'
+  assignedTo: ObjectId, // ref: 'User'
+  photos: [String],
+  reportedBy: ObjectId, // ref: 'User'
+  isDuplicate: Boolean,
+  originalReport: ObjectId, // ref: 'Report'
+  createdAt: Date,
+  updatedAt: Date,
+}
+
+// Indexes
+db.reports.createIndex({ location: "2dsphere" })
+db.reports.createIndex({
+  embedding: "vector",
+  path: "embedding",
+  numDimensions: 384,
+  similarity: "cosine",
+})
+```
+
+---
+
+## Testing
+
+### Backend Tests
+
+```bash
+cd backend
+npm test
+npm run test:watch
+npm run test:coverage
+```
+
+### Web Dashboard Tests
+
+```bash
+cd web_dashboard
+npm test
+npm run test:ui
+```
+
+### API Testing Examples
+
+Register a new user:
+
+```bash
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "password123",
+    "role": "field_worker"
+  }'
+```
+
+Create a dog report:
+
+```bash
+curl -X POST http://localhost:5000/api/dogs \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "name": "Bruno",
+    "breed": "Indian Pariah",
+    "location": {
+      "coordinates": [80.2707, 13.0827],
+      "address": "T Nagar, Chennai"
+    },
+    "notes": "Friendly dog, slight limp on right leg"
+  }'
+```
+
+---
+
+## Contributing
+
+Contributions are welcome. Please follow these guidelines:
+
+### Development Workflow
+
+1. Fork the repository and create a feature branch
+
+```bash
+git clone https://github.com/YOUR_USERNAME/stray_dog_care.git
+cd stray_dog_care
+git checkout -b feature/your-feature-name
+```
+
+2. Make your changes following the existing code style
+
+- Add tests for new features
+- Update documentation as needed
+
+3. Verify your changes
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+4. Commit with clear, descriptive messages
+
+```bash
+git commit -m "feat: add duplicate detection for dogs"
+git commit -m "fix: resolve coordinate precision issue"
+git commit -m "docs: update API endpoint documentation"
+```
+
+Follow the Conventional Commits specification.
+
+5. Push and create a Pull Request with detailed description
+
+### Code Style
+
+- JavaScript/TypeScript: https://github.com/airbnb/javascript
+- Python: https://pep8.org/
+- Commits: https://www.conventionalcommits.org/
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.
+
+---
+
+## Acknowledgments
+
+- AI4Bharat for IndicBERT multilingual NLP models
+- Hugging Face for Transformers and Sentence-Transformers libraries
+- MongoDB for Atlas Vector Search capabilities
+- React Native and Expo communities
+- All open source contributors
+
+---
+
+## Impact
+
+This platform enables:
+
+- Reduction in rabies-related deaths through systematic vaccination tracking
+- Improved animal welfare via sterilization monitoring
+- Data-driven policy making with evidence-based resource allocation
+- Community engagement for local issue reporting and tracking
+- Scalability to other cities and animal welfare scenarios
+
+---
+
+Made for animal welfare and public health

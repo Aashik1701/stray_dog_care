@@ -447,12 +447,50 @@ module.exports.createDogWithNLP = async (req, res) => {
     // Prefer healthStatus.notes, fallback to root notes
     const healthNotes = healthStatus?.notes || notes || '';
 
-    // Duplicate detection via NLP (text-based)
+    // Duplicate detection via NLP (text-based) with local candidates
     if (healthNotes) {
       try {
-        const duplicateResult = await nlpService.findDuplicates(healthNotes);
+        // Collect recent candidate notes within same zone and nearby area
+        const since = new Date(Date.now() - 1000 * 60 * 60 * 24 * 30); // last 30 days
+        const candidateQuery = { zone };
+        // If coordinates provided, prefer nearby dogs first
+        let candidatesDocs = [];
+        if (Array.isArray(coordinates) && coordinates.length === 2) {
+          candidatesDocs = await Dog.find({
+            ...candidateQuery,
+            createdAt: { $gte: since }
+          })
+            .select('healthStatus.notes notes breed color zone createdAt location')
+            .limit(100)
+            .lean();
+        } else {
+          candidatesDocs = await Dog.find({
+            ...candidateQuery,
+            createdAt: { $gte: since }
+          })
+            .select('healthStatus.notes notes breed color zone createdAt')
+            .sort({ createdAt: -1 })
+            .limit(100)
+            .lean();
+        }
+
+        // Build candidate texts
+        const candidates = candidatesDocs
+          .map(d => {
+            const pieces = [];
+            const n = d?.healthStatus?.notes || d?.notes || '';
+            if (n) pieces.push(n);
+            if (d?.breed) pieces.push(`breed: ${d.breed}`);
+            if (d?.color) pieces.push(`color: ${d.color}`);
+            if (d?.zone) pieces.push(`zone: ${d.zone}`);
+            return pieces.join(' | ').trim();
+          })
+          .filter(Boolean)
+          .slice(0, 20); // limit for transport size
+
+        const duplicateResult = await nlpService.findDuplicates(healthNotes, candidates, parseFloat(process.env.DOG_DUPLICATE_THRESHOLD || '0.82'));
         if (duplicateResult?.is_potential_duplicate) {
-          return res.status(400).json({
+          return res.status(409).json({
             success: false,
             message: 'Potential duplicate detected',
             data: { similar_reports: duplicateResult.similar_reports || [] }

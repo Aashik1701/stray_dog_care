@@ -176,14 +176,14 @@ export default function Analytics() {
 
         <Section title="Duplicate samples">
           <div className="space-y-3 max-h-72 overflow-auto pr-1">
-            {(data?.recentHighUrgency || []).slice(0, 6).map((r) => (
+            {(data?.recentDuplicates || []).slice(0, 6).map((r) => (
               <div key={String(r._id)} className="border border-gray-100 rounded-lg p-3">
                 <div className="text-xs text-gray-400">{format(new Date(r.created_at), 'PP p')}</div>
                 <div className="text-sm text-gray-800 mt-1 line-clamp-2">{r.summary || r.raw_text}</div>
                 <div className="text-xs text-amber-600 mt-1">Urgency {r.urgency_score?.toFixed(2)}</div>
               </div>
             ))}
-            {(!data?.recentHighUrgency || data.recentHighUrgency.length === 0) && <div className="text-sm text-gray-400">No high-urgency reports</div>}
+            {(!data?.recentDuplicates || data.recentDuplicates.length === 0) && <div className="text-sm text-gray-400">No duplicates found</div>}
           </div>
         </Section>
       </div>
