@@ -5,3 +5,8 @@ web-build/
 npm-debug.log
 .env
 .DS_Store
+.vscode/
+.idea/
+dist/
+build/
+*.log
