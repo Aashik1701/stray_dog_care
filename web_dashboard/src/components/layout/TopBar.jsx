@@ -11,6 +11,7 @@ import {
 import api from '../../services/api';
 import socketService from '../../services/socket';
 import { useAuth } from '../../hooks/useAuth';
+import ThemeToggle from '../ui/ThemeToggle';
 
 export default function TopBar({ stats }) {
   const [searchFocused, setSearchFocused] = useState(false);
@@ -176,8 +177,8 @@ export default function TopBar({ stats }) {
   };
 
   return (
-  <Motion.header 
-      className="relative z-30 bg-white border-b border-gray-200 shadow-soft"
+    <Motion.header 
+      className="relative z-30 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-soft"
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
@@ -221,6 +222,7 @@ export default function TopBar({ stats }) {
           {/* Right Section */}
           <div className="flex items-center space-x-4 lg:space-x-6">
             {renderNLPBadge()}
+            <ThemeToggle />
             {/* Quick Stats - Hidden on mobile, visible on tablet+ */}
             <div className="items-center hidden space-x-4 md:flex lg:space-x-6">
               {quickStats.map((stat, index) => (
@@ -237,7 +239,7 @@ export default function TopBar({ stats }) {
                   >
                     {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
                   </Motion.div>
-                  <div className="text-xs font-medium text-gray-600 lg:text-sm font-body">
+                  <div className="text-xs font-medium text-gray-600 dark:text-gray-300 lg:text-sm font-body">
                     {stat.label}
                   </div>
                 </Motion.div>
@@ -249,8 +251,8 @@ export default function TopBar({ stats }) {
               <Motion.button
                 className={`relative p-2 rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
                   showNotifications 
-                    ? 'text-primary-600 bg-primary-50' 
-                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                    ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/20' 
+                    : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 }`}
                 onClick={() => setShowNotifications(!showNotifications)}
                 whileHover={{ scale: 1.05 }}
@@ -275,7 +277,7 @@ export default function TopBar({ stats }) {
               <AnimatePresence>
                 {showNotifications && (
                   <Motion.div
-                    className="absolute right-0 z-50 mt-2 bg-white border border-gray-200 w-80 rounded-xl shadow-strong"
+                    className="absolute right-0 z-50 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 w-80 rounded-xl shadow-strong"
                     initial={{ opacity: 0, y: -10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
@@ -283,12 +285,12 @@ export default function TopBar({ stats }) {
                   >
                     <div className="p-4 border-b border-gray-100">
                       <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900 font-heading">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 font-heading">
                           Notifications
                         </h3>
                         <button
                           onClick={() => setShowNotifications(false)}
-                          className="p-1 text-gray-400 transition-colors duration-200 rounded-lg hover:text-gray-600 hover:bg-gray-100"
+                          className="p-1 text-gray-400 transition-colors duration-200 rounded-lg hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                           aria-label="Close notifications"
                         >
                           <XMarkIcon className="w-5 h-5" aria-hidden="true" />
@@ -301,7 +303,7 @@ export default function TopBar({ stats }) {
                         notifications.map((notification, index) => (
                           <Motion.div
                             key={notification.id}
-                            className="p-4 transition-colors duration-200 border-b cursor-pointer border-gray-50 last:border-b-0 hover:bg-gray-50"
+                            className="p-4 transition-colors duration-200 border-b cursor-pointer border-gray-50 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50"
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: index * 0.1 }}
@@ -321,13 +323,13 @@ export default function TopBar({ stats }) {
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 font-heading">
+                                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 font-heading">
                                   {notification.title}
                                 </p>
-                                <p className="text-sm text-gray-600 font-body">
+                                <p className="text-sm text-gray-600 dark:text-gray-300 font-body">
                                   {notification.message}
                                 </p>
-                                <p className="mt-1 text-xs text-gray-400 font-body">
+                                <p className="mt-1 text-xs text-gray-400 dark:text-gray-400 font-body">
                                   {notification.time}
                                 </p>
                               </div>

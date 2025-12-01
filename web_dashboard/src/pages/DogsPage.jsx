@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import DogsTable from '../components/tables/DogsTable';
+import EmptyState from '../components/ui/EmptyState';
 import apiService from '../services/api';
 import socketService from '../services/socket';
 import { useToast } from '../contexts/ToastContext';
@@ -273,12 +274,22 @@ export default function DogsPage() {
         </div>
       )}
 
-      {/* Dogs Table */}
-      <DogsTable 
-        dogs={dogs} 
-        onRowClick={handleDogClick}
-        loading={loading}
-      />
+      {/* Dogs Table or Empty State */}
+      {(!loading && !error && dogs.length === 0) ? (
+        <EmptyState
+          title="No dogs found"
+          description="Try clearing filters or register a new dog to get started."
+          action={(
+            <button className="btn-primary">Register New Dog</button>
+          )}
+        />
+      ) : (
+        <DogsTable 
+          dogs={dogs} 
+          onRowClick={handleDogClick}
+          loading={loading}
+        />
+      )}
 
       {/* Pagination */}
       {pagination.totalPages > 1 && (
