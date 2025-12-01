@@ -19,11 +19,11 @@ const UsersPage = () => {
   };
 
   const roleColors = {
-    field_worker: 'bg-green-100 text-green-800',
-    ngo_coordinator: 'bg-blue-100 text-blue-800',
-    municipal_admin: 'bg-purple-100 text-purple-800',
-    veterinarian: 'bg-yellow-100 text-yellow-800',
-    system_admin: 'bg-red-100 text-red-800'
+    field_worker: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300',
+    ngo_coordinator: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300',
+    municipal_admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300',
+    veterinarian: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300',
+    system_admin: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300'
   };
 
   useEffect(() => {
@@ -89,8 +89,8 @@ const UsersPage = () => {
   return (
     <div className="p-6">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">User Management</h1>
+        <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
           Manage system users and their roles
         </p>
       </div>
@@ -119,7 +119,7 @@ const UsersPage = () => {
             name="userSearch"
             type="text"
             placeholder="Search users by name, username, or email..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm placeholder-gray-400 dark:placeholder-gray-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -129,7 +129,7 @@ const UsersPage = () => {
           <select
             id="role-filter"
             name="role"
-            className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            className="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
           >
@@ -143,71 +143,71 @@ const UsersPage = () => {
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-2xl font-bold text-blue-600">{users.length}</div>
-          <div className="text-sm text-gray-600">Total Users</div>
+        <div className="card p-4">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-300">{users.length}</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Total Users</div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-2xl font-bold text-green-600">
+        <div className="card p-4">
+          <div className="text-2xl font-bold text-green-600 dark:text-green-300">
             {users.filter(u => u.isActive).length}
           </div>
-          <div className="text-sm text-gray-600">Active Users</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Active Users</div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-2xl font-bold text-yellow-600">
+        <div className="card p-4">
+          <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-300">
             {users.filter(u => u.role === 'field_worker').length}
           </div>
-          <div className="text-sm text-gray-600">Field Workers</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Field Workers</div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <div className="text-2xl font-bold text-purple-600">
+        <div className="card p-4">
+          <div className="text-2xl font-bold text-purple-600 dark:text-purple-300">
             {users.filter(u => ['ngo_coordinator', 'municipal_admin'].includes(u.role)).length}
           </div>
-          <div className="text-sm text-gray-600">Coordinators</div>
+          <div className="text-sm text-gray-600 dark:text-gray-300">Coordinators</div>
         </div>
       </div>
 
       {/* Users Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-md border border-gray-200 dark:border-gray-700">
         <div className="px-4 py-5 sm:px-6">
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
             Users ({filteredUsers.length})
           </h3>
         </div>
-        <ul className="divide-y divide-gray-200">
+        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
           {filteredUsers.map((user) => (
             <li key={user._id}>
               <div className="px-4 py-4 sm:px-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
-                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                        <span className="text-sm font-medium text-gray-700">
+                      <div className="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                           {user.profile.firstName[0]}{user.profile.lastName[0]}
                         </span>
                       </div>
                     </div>
                     <div className="ml-4">
                       <div className="flex items-center">
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {user.profile.firstName} {user.profile.lastName}
                         </div>
                         <span className={`ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${roleColors[user.role]}`}>
                           {roleLabels[user.role]}
                         </span>
                         {!user.isActive && (
-                          <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300">
                             Inactive
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         @{user.username} • {user.email}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         Phone: {user.profile.phoneNumber}
                       </div>
-                      <div className="text-sm text-gray-500">
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
                         Joined: {new Date(user.createdAt).toLocaleDateString()}
                         {user.lastLogin && (
                           <> • Last login: {new Date(user.lastLogin).toLocaleDateString()}</>
@@ -221,8 +221,8 @@ const UsersPage = () => {
                         onClick={() => handleStatusToggle(user._id, user.isActive)}
                         className={`inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md ${
                           user.isActive
-                            ? 'text-red-700 bg-red-100 hover:bg-red-200'
-                            : 'text-green-700 bg-green-100 hover:bg-green-200'
+                            ? 'text-red-700 bg-red-100 hover:bg-red-200 dark:text-red-300 dark:bg-red-900/20 dark:hover:bg-red-900/30'
+                            : 'text-green-700 bg-green-100 hover:bg-green-200 dark:text-green-300 dark:bg-green-900/20 dark:hover:bg-green-900/30'
                         } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
                         aria-label={user.isActive ? 'Deactivate user' : 'Activate user'}
                       >
@@ -233,7 +233,7 @@ const UsersPage = () => {
                 </div>
                 
                 {/* User Stats */}
-                <div className="mt-4 grid grid-cols-3 gap-4 text-sm text-gray-600">
+                <div className="mt-4 grid grid-cols-3 gap-4 text-sm text-gray-600 dark:text-gray-300">
                   <div>
                     <span className="font-medium">Dogs Registered:</span> {user.statistics?.dogsRegistered || 0}
                   </div>
@@ -254,8 +254,8 @@ const UsersPage = () => {
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No users found</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               Try adjusting your search criteria or filters.
             </p>
           </div>
