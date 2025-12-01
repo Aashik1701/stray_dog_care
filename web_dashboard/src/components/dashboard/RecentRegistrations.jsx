@@ -1,8 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { 
-  MapPinIcon, 
+import {
+  MapPinIcon,
   HeartIcon,
   ClockIcon,
   EyeIcon,
@@ -23,8 +23,8 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: { duration: 0.3 }
     }
@@ -32,45 +32,45 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
 
   if (loading) {
     return (
-      <motion.div 
+      <motion.div
         className="card p-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
         <div className="mb-6">
-          <h2 className="text-xl font-bold font-heading text-gray-900">Recent Registrations</h2>
-          <p className="text-sm text-gray-500 font-body">Latest dogs added to the system</p>
+          <h2 className="text-xl font-bold font-heading text-gray-900 dark:text-gray-100">Recent Registrations</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400 font-body">Latest dogs added to the system</p>
         </div>
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
-            <motion.div 
-              key={i} 
+            <motion.div
+              key={i}
               className="animate-pulse"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: i * 0.1, duration: 0.3 }}
             >
-              <div className="flex items-center space-x-4 p-4 border border-gray-200 rounded-xl">
-                <motion.div 
-                  className="h-12 w-12 bg-gray-200 rounded-xl"
+              <div className="flex items-center space-x-4 p-4 border border-gray-200 dark:border-gray-700 rounded-xl">
+                <motion.div
+                  className="h-12 w-12 bg-gray-200 dark:bg-gray-700 rounded-xl"
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 ></motion.div>
                 <div className="flex-1 space-y-2">
-                  <motion.div 
-                    className="h-4 bg-gray-200 rounded w-1/3"
+                  <motion.div
+                    className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/3"
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 1.5, repeat: Infinity, delay: 0.1 }}
                   ></motion.div>
-                  <motion.div 
-                    className="h-3 bg-gray-200 rounded w-1/2"
+                  <motion.div
+                    className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2"
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
                   ></motion.div>
                 </div>
-                <motion.div 
-                  className="h-8 w-20 bg-gray-200 rounded"
+                <motion.div
+                  className="h-8 w-20 bg-gray-200 dark:bg-gray-700 rounded"
                   animate={{ opacity: [0.5, 1, 0.5] }}
                   transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
                 ></motion.div>
@@ -83,30 +83,30 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
   }
 
   return (
-    <motion.div 
+    <motion.div
       className="card p-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: 0.2 }}
     >
       <div className="mb-6">
-        <h2 className="text-xl font-bold font-heading text-gray-900">Recent Registrations</h2>
-        <p className="text-sm text-gray-500 font-body">Latest dogs added to the system</p>
+        <h2 className="text-xl font-bold font-heading text-gray-900 dark:text-gray-100">Recent Registrations</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 font-body">Latest dogs added to the system</p>
       </div>
 
       {dogs.length === 0 ? (
-        <motion.div 
+        <motion.div
           className="text-center py-12"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
         >
           <HeartIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" aria-hidden="true" />
-          <h3 className="text-lg font-medium font-heading text-gray-900 mb-2">No recent registrations</h3>
-          <p className="text-gray-500 font-body">Dogs registered today will appear here</p>
+          <h3 className="text-lg font-medium font-heading text-gray-900 dark:text-gray-100 mb-2">No recent registrations</h3>
+          <p className="text-gray-500 dark:text-gray-400 font-body">Dogs registered today will appear here</p>
         </motion.div>
       ) : (
-        <motion.div 
+        <motion.div
           className="space-y-3"
           variants={containerVariants}
           initial="hidden"
@@ -116,7 +116,7 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
             <motion.div
               key={dog._id || index}
               variants={itemVariants}
-              className="group relative p-4 border border-gray-200 rounded-xl hover:border-primary-200 hover:shadow-medium transition-all duration-200 cursor-pointer"
+              className="group relative p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:border-primary-200 dark:hover:border-primary-700 hover:shadow-medium transition-all duration-200 cursor-pointer"
               onClick={() => onDogClick && onDogClick(dog)}
               whileHover={{ y: -2 }}
               role="button"
@@ -132,58 +132,59 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   {/* Dog Avatar */}
-                  <motion.div 
-                    className="relative"
-                    whileHover={{ scale: 1.05 }}
-                  >
+                  <motion.div className="relative" whileHover={{ scale: 1.05 }}>
                     {dog.images && dog.images.length > 0 && dog.images[0].url ? (
                       <img
                         src={dog.images[0].url}
                         alt={`${dog.name || dog.dogId || 'Dog'} photo`}
-                        className="h-14 w-14 rounded-xl object-cover border-2 border-gray-200 group-hover:border-primary-300 transition-colors duration-200"
+                        className="h-14 w-14 rounded-xl object-cover border-2 border-gray-200 dark:border-gray-700 group-hover:border-primary-300 dark:group-hover:border-primary-700 transition-colors duration-200"
                       />
                     ) : (
-                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center border-2 border-gray-200 group-hover:border-primary-300 transition-colors duration-200">
-                        <HeartIcon className="h-7 w-7 text-primary-600" aria-hidden="true" />
+                      <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/20 dark:to-primary-800/20 flex items-center justify-center border-2 border-gray-200 dark:border-gray-700 group-hover:border-primary-300 dark:group-hover:border-primary-700 transition-colors duration-200">
+                        <HeartIcon className="h-7 w-7 text-primary-600 dark:text-primary-300" aria-hidden="true" />
                       </div>
                     )}
-                    
+
                     {/* Status indicator */}
-                    <div className={`absolute -top-1 -right-1 h-4 w-4 rounded-full border-2 border-white ${
-                      dog.healthStatus?.isInjured ? 'bg-danger-500' :
-                      dog.healthStatus?.isHealthy === false ? 'bg-warning-500' :
-                      'bg-success-500'
-                    }`} title={`Health status: ${
-                      dog.healthStatus?.isInjured ? 'Injured' :
-                      dog.healthStatus?.isHealthy === false ? 'Needs attention' :
-                      'Healthy'
-                    }`}></div>
+                    <div
+                      className={`absolute -top-1 -right-1 h-4 w-4 rounded-full border-2 border-white dark:border-gray-800 ${
+                        dog.healthStatus?.isInjured
+                          ? 'bg-danger-500'
+                          : dog.healthStatus?.isHealthy === false
+                          ? 'bg-warning-500'
+                          : 'bg-success-500'
+                      }`}
+                      title={`Health status: ${
+                        dog.healthStatus?.isInjured
+                          ? 'Injured'
+                          : dog.healthStatus?.isHealthy === false
+                          ? 'Needs attention'
+                          : 'Healthy'
+                      }`}
+                    ></div>
                   </motion.div>
 
                   {/* Dog Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center space-x-2 mb-1">
-                      <h3 className="text-sm font-semibold font-heading text-gray-900 truncate">
+                      <h3 className="text-sm font-semibold font-heading text-gray-900 dark:text-gray-100 truncate">
                         {dog.name || dog.dogId || 'Unnamed'}
                       </h3>
                       {dog.breed && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
                           {dog.breed}
                         </span>
                       )}
                     </div>
-                    
-                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+
+                    <div className="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
                       <div className="flex items-center space-x-1">
                         <MapPinIcon className="h-3 w-3" aria-hidden="true" />
                         <span className="truncate max-w-32">
-                          {dog.zone || 
-                           dog.address?.area || 
-                           dog.address?.city || 
-                           'Location unknown'}
+                          {dog.zone || dog.address?.area || dog.address?.city || 'Location unknown'}
                         </span>
                       </div>
-                      
+
                       {dog.createdAt && (
                         <div className="flex items-center space-x-1">
                           <ClockIcon className="h-3 w-3" aria-hidden="true" />
@@ -195,27 +196,27 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
                     {/* Health indicators */}
                     <div className="flex items-center space-x-2 mt-2">
                       {dog.healthStatus?.isVaccinated && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-700 dark:bg-success-900/20 dark:text-success-300">
                           Vaccinated
                         </span>
                       )}
                       {dog.healthStatus?.isSterilized && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
                           Sterilized
                         </span>
                       )}
                       {dog.healthStatus?.isInjured && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-danger-100 text-danger-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-danger-100 text-danger-700 dark:bg-danger-900/20 dark:text-danger-300">
                           Needs Attention
                         </span>
                       )}
                       {dog.size && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
                           {dog.size.charAt(0).toUpperCase() + dog.size.slice(1)}
                         </span>
                       )}
                       {dog.gender && dog.gender !== 'unknown' && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                           {dog.gender.charAt(0).toUpperCase() + dog.gender.slice(1)}
                         </span>
                       )}
@@ -227,7 +228,7 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
                 <div className="flex items-center space-x-1">
                   {onEdit && (
                     <motion.button
-                      className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-blue-600 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={(e) => {
@@ -240,10 +241,10 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
                       <PencilIcon className="h-4 w-4" aria-hidden="true" />
                     </motion.button>
                   )}
-                  
+
                   {onDelete && (
                     <motion.button
-                      className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-red-600 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={(e) => {
@@ -256,9 +257,9 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
                       <TrashIcon className="h-4 w-4" aria-hidden="true" />
                     </motion.button>
                   )}
-                  
+
                   <motion.button
-                    className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="flex items-center justify-center p-2 rounded-lg text-gray-400 hover:text-primary-600 dark:hover:text-primary-300 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={(e) => {
@@ -276,15 +277,13 @@ export default function RecentRegistrations({ dogs = [], loading = false, onDogC
           ))}
 
           {dogs.length > 5 && (
-            <motion.div 
+            <motion.div
               className="text-center pt-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
             >
-              <button className="btn-secondary">
-                View All {dogs.length} Dogs
-              </button>
+              <button className="btn-secondary">View All {dogs.length} Dogs</button>
             </motion.div>
           )}
         </motion.div>

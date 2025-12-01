@@ -56,39 +56,39 @@ const quickActions = [
 
 const colorVariants = {
   primary: {
-    bg: 'bg-primary-50 hover:bg-primary-100',
-    text: 'text-primary-600',
-    border: 'border-primary-200 hover:border-primary-300',
+    bg: 'bg-primary-50 hover:bg-primary-100 dark:bg-primary-900/15 dark:hover:bg-primary-900/25',
+    text: 'text-primary-600 dark:text-primary-300',
+    border: 'border-primary-200 hover:border-primary-300 dark:border-primary-900/30 dark:hover:border-primary-800/40',
     shadow: 'hover:shadow-primary-500/20'
   },
   success: {
-    bg: 'bg-success-50 hover:bg-success-100',
-    text: 'text-success-600',
-    border: 'border-success-200 hover:border-success-300',
+    bg: 'bg-success-50 hover:bg-success-100 dark:bg-success-900/15 dark:hover:bg-success-900/25',
+    text: 'text-success-600 dark:text-success-300',
+    border: 'border-success-200 hover:border-success-300 dark:border-success-900/30 dark:hover:border-success-800/40',
     shadow: 'hover:shadow-success-500/20'
   },
   warning: {
-    bg: 'bg-warning-50 hover:bg-warning-100',
-    text: 'text-warning-600',
-    border: 'border-warning-200 hover:border-warning-300',
+    bg: 'bg-warning-50 hover:bg-warning-100 dark:bg-warning-900/15 dark:hover:bg-warning-900/25',
+    text: 'text-warning-600 dark:text-warning-300',
+    border: 'border-warning-200 hover:border-warning-300 dark:border-warning-900/30 dark:hover:border-warning-800/40',
     shadow: 'hover:shadow-warning-500/20'
   },
   purple: {
-    bg: 'bg-purple-50 hover:bg-purple-100',
-    text: 'text-purple-600',
-    border: 'border-purple-200 hover:border-purple-300',
+    bg: 'bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/15 dark:hover:bg-purple-900/25',
+    text: 'text-purple-600 dark:text-purple-300',
+    border: 'border-purple-200 hover:border-purple-300 dark:border-purple-900/30 dark:hover:border-purple-800/40',
     shadow: 'hover:shadow-purple-500/20'
   },
   indigo: {
-    bg: 'bg-indigo-50 hover:bg-indigo-100',
-    text: 'text-indigo-600',
-    border: 'border-indigo-200 hover:border-indigo-300',
+    bg: 'bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/15 dark:hover:bg-indigo-900/25',
+    text: 'text-indigo-600 dark:text-indigo-300',
+    border: 'border-indigo-200 hover:border-indigo-300 dark:border-indigo-900/30 dark:hover:border-indigo-800/40',
     shadow: 'hover:shadow-indigo-500/20'
   },
   emerald: {
-    bg: 'bg-emerald-50 hover:bg-emerald-100',
-    text: 'text-emerald-600',
-    border: 'border-emerald-200 hover:border-emerald-300',
+    bg: 'bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/15 dark:hover:bg-emerald-900/25',
+    text: 'text-emerald-600 dark:text-emerald-300',
+    border: 'border-emerald-200 hover:border-emerald-300 dark:border-emerald-900/30 dark:hover:border-emerald-800/40',
     shadow: 'hover:shadow-emerald-500/20'
   }
 };
@@ -137,8 +137,8 @@ export default function QuickActions({ onActionClick }) {
       transition={{ duration: 0.4, delay: 0.4 }}
     >
       <div className="mb-6">
-        <h2 className="text-xl font-bold font-heading text-gray-900">Quick Actions</h2>
-        <p className="text-sm text-gray-500 font-body">Common tasks and shortcuts</p>
+        <h2 className="text-xl font-bold font-heading text-gray-900 dark:text-gray-100">Quick Actions</h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 font-body">Common tasks and shortcuts</p>
       </div>
 
       <motion.div 
@@ -175,7 +175,7 @@ export default function QuickActions({ onActionClick }) {
                   <h3 title={action.name} className={`text-sm font-semibold font-heading truncate ${colors.text} group-hover:text-opacity-80 transition-colors duration-200`}> 
                     {action.name}
                   </h3>
-                  <p className="hidden lg:block text-xs text-gray-600 font-body mt-1 leading-relaxed truncate">
+                  <p className="hidden lg:block text-xs text-gray-600 dark:text-gray-400 font-body mt-1 leading-relaxed truncate">
                     {action.description}
                   </p>
                 </div>
@@ -183,7 +183,7 @@ export default function QuickActions({ onActionClick }) {
 
               {/* Hover overlay */}
               <motion.div
-                className="absolute inset-0 rounded-xl bg-white bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200"
+                className="absolute inset-0 rounded-xl bg-white bg-opacity-0 group-hover:bg-opacity-10 dark:bg-white/5 dark:group-hover:bg-white/10 transition-all duration-200"
                 initial={false}
                 whileHover={{ scale: 1.02 }}
               />
@@ -202,7 +202,7 @@ export default function QuickActions({ onActionClick }) {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
       >
-        <p className="text-xs text-gray-400 font-body">
+        <p className="text-xs text-gray-400 dark:text-gray-500 font-body">
           More actions available in the main navigation menu
         </p>
       </motion.div>

@@ -318,10 +318,10 @@ export default function Dashboard() {
     >
       {/* Header */}
       <motion.div variants={sectionVariants}>
-        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold font-heading text-gray-900">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold font-heading text-gray-900 dark:text-gray-100">
           Dashboard
         </h1>
-        <p className="text-gray-600 font-body mt-1 md:mt-2 text-sm md:text-base lg:text-lg">
+        <p className="text-gray-600 dark:text-gray-300 font-body mt-1 md:mt-2 text-sm md:text-base lg:text-lg">
           Overview of stray dog management activities
         </p>
       </motion.div>
@@ -398,7 +398,7 @@ export default function Dashboard() {
       >
         {/* Health Status Overview */}
         <div className="card p-6">
-          <h3 className="text-lg font-semibold font-heading text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold font-heading text-gray-900 dark:text-gray-100 mb-4">
             Health Status Distribution
           </h3>
           <div className="space-y-3">
@@ -414,9 +414,9 @@ export default function Dashboard() {
                     item.color === 'danger' ? 'bg-danger-500' :
                     'bg-warning-500'
                   }`}></div>
-                  <span className="text-sm font-medium font-body text-gray-700">{item.status}</span>
+                  <span className="text-sm font-medium font-body text-gray-700 dark:text-gray-300">{item.status}</span>
                 </div>
-                <span className="text-sm font-semibold font-heading text-gray-900">
+                <span className="text-sm font-semibold font-heading text-gray-900 dark:text-gray-100">
                   {item.count}
                 </span>
               </div>
@@ -426,13 +426,13 @@ export default function Dashboard() {
 
         {/* Recent Activity Summary */}
         <div className="card p-6">
-          <h3 className="text-lg font-semibold font-heading text-gray-900 mb-4">
+          <h3 className="text-lg font-semibold font-heading text-gray-900 dark:text-gray-100 mb-4">
             Today's Activity
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium font-body text-gray-700">New Registrations</span>
-              <span className="text-sm font-semibold font-heading text-gray-900">
+              <span className="text-sm font-medium font-body text-gray-700 dark:text-gray-300">New Registrations</span>
+              <span className="text-sm font-semibold font-heading text-gray-900 dark:text-gray-100">
                 {dogs.filter(dog => {
                   const today = new Date();
                   const dogDate = new Date(dog.createdAt);
@@ -441,12 +441,12 @@ export default function Dashboard() {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium font-body text-gray-700">Vaccinations</span>
-              <span className="text-sm font-semibold font-heading text-gray-900">0</span>
+              <span className="text-sm font-medium font-body text-gray-700 dark:text-gray-300">Vaccinations</span>
+              <span className="text-sm font-semibold font-heading text-gray-900 dark:text-gray-100">0</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium font-body text-gray-700">Sterilizations</span>
-              <span className="text-sm font-semibold font-heading text-gray-900">0</span>
+              <span className="text-sm font-medium font-body text-gray-700 dark:text-gray-300">Sterilizations</span>
+              <span className="text-sm font-semibold font-heading text-gray-900 dark:text-gray-100">0</span>
             </div>
           </div>
         </div>

@@ -30,10 +30,10 @@ const iconVariants = cva(
   {
     variants: {
       color: {
-        blue: "text-primary-600 bg-primary-50 group-hover:bg-primary-100",
-        green: "text-success-600 bg-success-50 group-hover:bg-success-100",
-        yellow: "text-warning-600 bg-warning-50 group-hover:bg-warning-100",
-        red: "text-danger-600 bg-danger-50 group-hover:bg-danger-100",
+        blue: "text-primary-600 bg-primary-50 group-hover:bg-primary-100 dark:text-primary-300 dark:bg-primary-900/20 dark:group-hover:bg-primary-900/30",
+        green: "text-success-600 bg-success-50 group-hover:bg-success-100 dark:text-success-300 dark:bg-success-900/20 dark:group-hover:bg-success-900/30",
+        yellow: "text-warning-600 bg-warning-50 group-hover:bg-warning-100 dark:text-warning-300 dark:bg-warning-900/20 dark:group-hover:bg-warning-900/30",
+        red: "text-danger-600 bg-danger-50 group-hover:bg-danger-100 dark:text-danger-300 dark:bg-danger-900/20 dark:group-hover:bg-danger-900/30",
       }
     },
     defaultVariants: {
@@ -47,10 +47,10 @@ const valueVariants = cva(
   {
     variants: {
       color: {
-        blue: "text-gray-900 group-hover:text-primary-700",
-        green: "text-gray-900 group-hover:text-success-700",
-        yellow: "text-gray-900 group-hover:text-warning-700",
-        red: "text-gray-900 group-hover:text-danger-700",
+        blue: "text-gray-900 dark:text-gray-100 group-hover:text-primary-700 dark:group-hover:text-primary-300",
+        green: "text-gray-900 dark:text-gray-100 group-hover:text-success-700 dark:group-hover:text-success-300",
+        yellow: "text-gray-900 dark:text-gray-100 group-hover:text-warning-700 dark:group-hover:text-warning-300",
+        red: "text-gray-900 dark:text-gray-100 group-hover:text-danger-700 dark:group-hover:text-danger-300",
       },
       size: {
         sm: "text-xl",
@@ -102,9 +102,9 @@ export default function MetricCard({
   };
 
   const changeColors = {
-    positive: 'text-success-600 bg-success-50',
-    negative: 'text-danger-600 bg-danger-50',
-    neutral: 'text-gray-600 bg-gray-50',
+    positive: 'text-success-600 bg-success-50 dark:text-success-300 dark:bg-success-900/20',
+    negative: 'text-danger-600 bg-danger-50 dark:text-danger-300 dark:bg-danger-900/20',
+    neutral: 'text-gray-600 bg-gray-50 dark:text-gray-300 dark:bg-gray-800',
   };
 
   const MotionCard = onClick ? motion.button : motion.div;
@@ -144,7 +144,7 @@ export default function MetricCard({
         <div className="ml-5 w-0 flex-1">
           <dl>
             <motion.dt 
-              className="text-sm font-medium font-body text-gray-500 truncate"
+              className="text-sm font-medium font-body text-gray-500 dark:text-gray-400 truncate"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
