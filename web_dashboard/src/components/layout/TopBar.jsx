@@ -207,10 +207,10 @@ export default function TopBar({ stats }) {
                 name="topbarSearch"
                 type="text"
                 placeholder="Search dogs, locations, or IDs..."
-                className={`block w-full pl-10 pr-3 py-3 border rounded-xl leading-5 bg-white placeholder-gray-500 font-body text-sm transition-all duration-200 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
+                className={`block w-full pl-10 pr-3 py-3 border rounded-xl leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 dark:text-gray-100 font-body text-sm transition-all duration-200 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                   searchFocused 
-                    ? 'border-primary-300 shadow-medium' 
-                    : 'border-gray-300 shadow-soft hover:border-gray-400'
+                    ? 'border-primary-300 dark:border-primary-700 shadow-medium' 
+                    : 'border-gray-300 dark:border-gray-700 shadow-soft hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}

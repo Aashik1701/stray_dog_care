@@ -92,7 +92,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
 
       {/* Sidebar */}
       <motion.div 
-        className={`fixed inset-y-0 left-0 z-50 bg-white shadow-strong border-r border-gray-200 transform ${
+        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-900 shadow-strong border-r border-gray-200 dark:border-gray-800 transform ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
         variants={sidebarVariants}
@@ -101,7 +101,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       >
         
         {/* Logo */}
-        <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
+        <div className="flex h-16 items-center justify-between border-b border-gray-200 dark:border-gray-800 px-4">
           <motion.div 
             className="flex items-center"
             whileHover={{ scale: 1.02 }}
@@ -119,7 +119,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
             <AnimatePresence mode="wait">
               {!isCollapsed && (
                 <motion.span 
-                  className="ml-3 text-xl font-bold font-heading text-gray-900"
+                  className="ml-3 text-xl font-bold font-heading text-gray-900 dark:text-gray-100"
                   variants={contentVariants}
                   initial="collapsed"
                   animate="expanded"
@@ -135,7 +135,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
           {/* Desktop toggle button */}
           <motion.button
             onClick={toggleSidebar}
-            className="hidden lg:flex p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="hidden lg:flex p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -145,19 +145,19 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
               animate={{ rotate: isCollapsed ? 180 : 0 }}
               transition={{ duration: 0.2 }}
             >
-              <ChevronLeftIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+              <ChevronLeftIcon className="h-5 w-5 text-gray-500 dark:text-gray-300" aria-hidden="true" />
             </motion.div>
           </motion.button>
 
           {/* Mobile close button */}
           <motion.button
             onClick={closeMobileMenu}
-            className="lg:hidden p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="lg:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             aria-label="Close sidebar"
           >
-            <XMarkIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
+            <XMarkIcon className="h-5 w-5 text-gray-500 dark:text-gray-300" aria-hidden="true" />
           </motion.button>
         </div>
 
@@ -178,8 +178,8 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     to={item.href}
                     className={`group relative flex items-center px-3 py-3 text-sm font-medium font-body rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
                       isActive
-                        ? 'bg-primary-100 text-primary-700 shadow-soft'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-primary-100 text-primary-700 shadow-soft dark:bg-primary-900/20 dark:text-primary-200'
+                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800'
                     } ${isCollapsed ? 'justify-center' : ''}`}
                     title={isCollapsed ? item.name : ''}
                   >
@@ -199,7 +199,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     >
                       <item.icon
                         className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
-                          isActive ? 'text-primary-600' : 'text-gray-500 group-hover:text-gray-700'
+                          isActive ? 'text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-white'
                         }`}
                         aria-hidden="true"
                       />
@@ -240,13 +240,13 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
 
         {/* User info */}
         <motion.div 
-          className="absolute bottom-0 w-full p-4 border-t border-gray-200 bg-gray-50"
+          className="absolute bottom-0 w-full p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.3 }}
         >
           <motion.div 
-            className={`flex items-center transition-all duration-200 hover:bg-white rounded-xl p-2 ${
+            className={`flex items-center transition-all duration-200 hover:bg-white dark:hover:bg-gray-800 rounded-xl p-2 ${
               isCollapsed ? 'justify-center' : ''
             }`}
             whileHover={{ scale: 1.02 }}
@@ -272,10 +272,10 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                   exit="collapsed"
                   transition={{ duration: 0.2 }}
                 >
-                  <p className="text-sm font-medium font-heading text-gray-900">
+                  <p className="text-sm font-medium font-heading text-gray-900 dark:text-gray-100">
                     {user ? `${user.profile.firstName} ${user.profile.lastName}` : 'Test User'}
                   </p>
-                  <p className="text-xs text-gray-500 font-body">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-body">
                     {user ? user.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Field Worker'}
                   </p>
                 </motion.div>
@@ -284,12 +284,12 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
             {!isCollapsed && (
               <motion.button
                 onClick={handleLogout}
-                className="ml-2 p-1 rounded-lg hover:bg-gray-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                className="ml-2 p-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                 title="Logout"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <ArrowRightOnRectangleIcon className="h-5 w-5 text-gray-500 hover:text-red-600" />
+                <ArrowRightOnRectangleIcon className="h-5 w-5 text-gray-500 dark:text-gray-300 hover:text-red-600" />
               </motion.button>
             )}
           </motion.div>
@@ -299,7 +299,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
       {/* Mobile menu button */}
       <motion.button
         type="button"
-        className="fixed top-4 left-4 z-40 lg:hidden p-3 rounded-xl bg-white shadow-medium border border-gray-200 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        className="fixed top-4 left-4 z-40 lg:hidden p-3 rounded-xl bg-white dark:bg-gray-900 shadow-medium border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
