@@ -92,9 +92,9 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
 
       {/* Sidebar */}
       <motion.div 
-        className={`fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-900 shadow-strong border-r border-gray-200 dark:border-gray-800 transform ${
+        className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-white dark:bg-gray-900 shadow-strong border-r border-gray-200 dark:border-gray-800 transform ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0`}
+        } transition-transform duration-300 ease-in-out lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:flex-col`}
         variants={sidebarVariants}
         animate={isCollapsed ? "collapsed" : "expanded"}
         transition={{ duration: 0.3, ease: "easeInOut" }}
@@ -240,7 +240,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
 
         {/* User info */}
         <motion.div 
-          className="absolute bottom-0 w-full p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900"
+          className="mt-auto p-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.3 }}
