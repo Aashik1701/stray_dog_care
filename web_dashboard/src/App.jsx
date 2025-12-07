@@ -12,6 +12,7 @@ import LoginPage from './pages/LoginPage';
 import MapPage from './pages/MapPage';
 import RegisterPage from './pages/RegisterPage';
 import Analytics from './pages/Analytics';
+import Settings from './pages/Settings';
 
 // Protected App Routes Component
 const AppRoutes = () => {
@@ -62,7 +63,7 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } 
         />
-        <Route path="settings" element={<div className="p-6 text-center text-gray-500">Settings coming soon...</div>} />
+        <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

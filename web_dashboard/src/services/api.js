@@ -238,6 +238,22 @@ class ApiService {
   async getMe() {
     return this.request('/auth/me');
   }
+  
+  // Profile settings
+  async updateMe(update) {
+    return this.request('/auth/me', {
+      method: 'PUT',
+      body: JSON.stringify(update),
+    });
+  }
+
+  // Security
+  async changePassword({ currentPassword, newPassword }) {
+    return this.request('/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
 
   // Dogs methods
   async getDogs(params = {}) {
