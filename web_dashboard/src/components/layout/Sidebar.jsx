@@ -10,6 +10,7 @@ import {
   CogIcon,
   HeartIcon,
   ChevronLeftIcon,
+  ChevronDownIcon,
   Bars3Icon,
   XMarkIcon,
   ArrowRightOnRectangleIcon
@@ -18,40 +19,73 @@ import { useAuth } from '../../hooks/useAuth';
 
 export default function Sidebar({ isCollapsed, setIsCollapsed, stats }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [expandedSections, setExpandedSections] = useState(['main']);
   const location = useLocation();
   const { user, logout, hasPermission } = useAuth();
 
-  // Get role-based navigation items with badge counts
-  const getNavigationItems = () => {
-    const baseItems = [
-      { name: 'Dashboard', href: '/', icon: HomeIcon },
-      { 
-        name: 'Dogs', 
-        href: '/dogs', 
-        icon: HeartIcon,
-        badge: stats?.injured > 0 ? stats.injured : null,
-        badgeColor: 'red'
-      },
-      { name: 'Map View', href: '/map', icon: MapIcon }
-    ];
-
-    // Add Analytics for users with permission
-    if (hasPermission('view_analytics')) {
-      baseItems.push({ name: 'Analytics', href: '/analytics', icon: ChartBarIcon });
-    }
-
-    // Add Users for users with permission
-    if (hasPermission('manage_users')) {
-      baseItems.push({ name: 'Users', href: '/users', icon: UsersIcon });
-    }
-
-    // Add Settings for all users
-    baseItems.push({ name: 'Settings', href: '/settings', icon: CogIcon });
-
-    return baseItems;
+  const toggleSection = (sectionId) => {
+    if (isCollapsed) return; // Don't toggle when collapsed
+    setExpandedSections(prev =>
+      prev.includes(sectionId)
+        ? prev.filter(id => id !== sectionId)
+        : [...prev, sectionId]
+    );
   };
 
-  const navigation = getNavigationItems();
+  // Get role-based navigation items with badge counts and sections
+  const getNavigationSections = () => {
+    const sections = [
+      {
+        id: 'main',
+        name: 'Main',
+        items: [
+          { name: 'Dashboard', href: '/', icon: HomeIcon },
+          { 
+            name: 'Dogs', 
+            href: '/dogs', 
+            icon: HeartIcon,
+            badge: stats?.injured > 0 ? stats.injured : null,
+            badgeColor: 'red'
+          },
+          { name: 'Map View', href: '/map', icon: MapIcon }
+        ]
+      }
+    ];
+
+    // Add Management section for users with permissions
+    if (hasPermission('view_analytics') || hasPermission('manage_users')) {
+      const managementItems = [];
+      
+      if (hasPermission('view_analytics')) {
+        managementItems.push({ name: 'Analytics', href: '/analytics', icon: ChartBarIcon });
+      }
+      
+      if (hasPermission('manage_users')) {
+        managementItems.push({ name: 'Users', href: '/users', icon: UsersIcon });
+      }
+
+      if (managementItems.length > 0) {
+        sections.push({
+          id: 'management',
+          name: 'Management',
+          items: managementItems
+        });
+      }
+    }
+
+    // Add Settings section
+    sections.push({
+      id: 'settings',
+      name: 'Settings',
+      items: [
+        { name: 'Settings', href: '/settings', icon: CogIcon }
+      ]
+    });
+
+    return sections;
+  };
+
+  const navigationSections = getNavigationSections();
 
   const handleLogout = async () => {
     try {
@@ -168,102 +202,140 @@ export default function Sidebar({ isCollapsed, setIsCollapsed, stats }) {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-8 px-4" role="navigation" aria-label="Main navigation">
-          <ul role="list" className="space-y-2">
-            {navigation.map((item, index) => {
-              const isActive = location.pathname === item.href;
+        <nav className="mt-8 px-4 flex-1 overflow-y-auto" role="navigation" aria-label="Main navigation">
+          <div className="space-y-6">
+            {navigationSections.map((section) => {
+              const isExpanded = expandedSections.includes(section.id);
               
               return (
-                <motion.li 
-                  key={item.name}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.3 }}
-                >
-                  <NavLink
-                    to={item.href}
-                    className={`group relative flex items-center px-3 py-3 text-sm font-medium font-body rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
-                      isActive
-                        ? 'bg-primary-100 text-primary-700 shadow-soft dark:bg-primary-900/20 dark:text-primary-200'
-                        : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800'
-                    } ${isCollapsed ? 'justify-center' : ''}`}
-                    title={isCollapsed ? item.name : ''}
-                  >
-                    {/* Active indicator */}
-                    {isActive && (
-                      <motion.div
-                        className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-r-full"
-                        layoutId="activeIndicator"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      />
-                    )}
-                    
-                    <motion.div
-                      className={`flex items-center ${isCollapsed ? '' : 'mr-3'}`}
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.1 }}
+                <div key={section.id}>
+                  {/* Section Header (only show when expanded) */}
+                  {!isCollapsed && section.items.length > 1 && (
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className="flex items-center justify-between w-full px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                     >
-                      <item.icon
-                        className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
-                          isActive ? 'text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-white'
-                        }`}
-                        aria-hidden="true"
-                      />
-                    </motion.div>
-                    
-                    <AnimatePresence mode="wait">
-                      {!isCollapsed && (
-                        <motion.span
-                          className="flex-1"
-                          variants={contentVariants}
-                          initial="collapsed"
-                          animate="expanded"
-                          exit="collapsed"
-                          transition={{ duration: 0.2 }}
-                        >
-                          {item.name}
-                        </motion.span>
-                      )}
-                    </AnimatePresence>
-
-                    {/* Notification Badge */}
-                    {item.badge && item.badge > 0 && (
-                      <motion.span
-                        className={`ml-auto px-2 py-0.5 text-xs font-semibold rounded-full ${
-                          item.badgeColor === 'red' 
-                            ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' 
-                            : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
-                        }`}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      >
-                        {item.badge}
-                      </motion.span>
-                    )}
-
-                    {/* Tooltip for collapsed state */}
-                    {isCollapsed && (
+                      <span>{section.name}</span>
                       <motion.div
-                        className="absolute left-16 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-nowrap"
-                        initial={{ x: -10, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        exit={{ x: -10, opacity: 0 }}
+                        animate={{ rotate: isExpanded ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        {item.name}
-                        {item.badge && item.badge > 0 && (
-                          <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-500 text-white">
-                            {item.badge}
-                          </span>
-                        )}
-                        <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                        <ChevronDownIcon className="h-4 w-4" />
                       </motion.div>
+                    </button>
+                  )}
+
+                  {/* Section Items */}
+                  <AnimatePresence initial={false}>
+                    {(isExpanded || isCollapsed) && (
+                      <motion.ul
+                        role="list"
+                        className="space-y-2"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {section.items.map((item, index) => {
+                          const isActive = location.pathname === item.href;
+                          
+                          return (
+                            <motion.li 
+                              key={item.name}
+                              initial={{ opacity: 0, x: -20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05, duration: 0.2 }}
+                            >
+                              <NavLink
+                                to={item.href}
+                                className={`group relative flex items-center px-3 py-3 text-sm font-medium font-body rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
+                                  isActive
+                                    ? 'bg-primary-100 text-primary-700 shadow-soft dark:bg-primary-900/20 dark:text-primary-200'
+                                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800'
+                                } ${isCollapsed ? 'justify-center' : ''}`}
+                                title={isCollapsed ? item.name : ''}
+                              >
+                                {/* Active indicator */}
+                                {isActive && (
+                                  <motion.div
+                                    className="absolute left-0 top-0 bottom-0 w-1 bg-primary-500 rounded-r-full"
+                                    layoutId="activeIndicator"
+                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                  />
+                                )}
+                                
+                                <motion.div
+                                  className={`flex items-center ${isCollapsed ? '' : 'mr-3'}`}
+                                  whileHover={{ scale: 1.1 }}
+                                  transition={{ duration: 0.1 }}
+                                >
+                                  <item.icon
+                                    className={`h-5 w-5 flex-shrink-0 transition-colors duration-200 ${
+                                      isActive ? 'text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-white'
+                                    }`}
+                                    aria-hidden="true"
+                                  />
+                                </motion.div>
+                                
+                                <AnimatePresence mode="wait">
+                                  {!isCollapsed && (
+                                    <motion.span
+                                      className="flex-1"
+                                      variants={contentVariants}
+                                      initial="collapsed"
+                                      animate="expanded"
+                                      exit="collapsed"
+                                      transition={{ duration: 0.2 }}
+                                    >
+                                      {item.name}
+                                    </motion.span>
+                                  )}
+                                </AnimatePresence>
+
+                                {/* Notification Badge */}
+                                {item.badge && item.badge > 0 && (
+                                  <motion.span
+                                    className={`ml-auto px-2 py-0.5 text-xs font-semibold rounded-full ${
+                                      item.badgeColor === 'red' 
+                                        ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' 
+                                        : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                                    }`}
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                  >
+                                    {item.badge}
+                                  </motion.span>
+                                )}
+
+                                {/* Tooltip for collapsed state */}
+                                {isCollapsed && (
+                                  <motion.div
+                                    className="absolute left-16 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-nowrap"
+                                    initial={{ x: -10, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    exit={{ x: -10, opacity: 0 }}
+                                  >
+                                    {item.name}
+                                    {item.badge && item.badge > 0 && (
+                                      <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-500 text-white">
+                                        {item.badge}
+                                      </span>
+                                    )}
+                                    <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
+                                  </motion.div>
+                                )}
+                              </NavLink>
+                            </motion.li>
+                          );
+                        })}
+                      </motion.ul>
                     )}
-                  </NavLink>
-                </motion.li>
+                  </AnimatePresence>
+                </div>
               );
             })}
-          </ul>
+          </div>
         </nav>
 
         {/* Mini Stats */}

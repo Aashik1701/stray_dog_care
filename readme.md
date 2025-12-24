@@ -138,9 +138,9 @@ Node.js/Express API with Python microservices:
 
 ### Technology Stack
 
-| Layer    | Technologies                                           | Purpose                                           |
-|----------|--------------------------------------------------------|---------------------------------------------------|
-| Mobile   | React Native 0.76, Expo 52, TypeScript                | Cross-platform iOS/Android with native capabilities |
+| Layer    | Technologies                                         | Purpose                                           |
+|----------|------------------------------------------------------|---------------------------------------------------|
+| Mobile   | React Native 0.76, Expo 52, TypeScript               | Cross-platform iOS/Android with native capabilities |
 | Web      | React 19, Vite 7, TailwindCSS 3.4, Recharts 3.1      | Fast, responsive dashboard with rich visualizations |
 | Backend  | Node.js 22, Express 4.21, Socket.IO 4.8              | Scalable API with real-time features              |
 | NLP      | FastAPI 0.115, IndicBERT, Sentence-Transformers      | Multilingual NLP processing and embeddings        |

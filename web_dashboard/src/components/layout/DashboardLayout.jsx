@@ -4,6 +4,7 @@ import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import CommandPalette from '../ui/CommandPalette';
+import FloatingActionButton from '../ui/FloatingActionButton';
 import apiService from '../../services/api';
 
 // Reference to satisfy some linters that don't detect JSX tag usage of `motion.*`
@@ -66,6 +67,9 @@ export default function DashboardLayout() {
         isOpen={isCommandPaletteOpen} 
         onClose={() => setIsCommandPaletteOpen(false)} 
       />
+
+      {/* Floating Action Button (Mobile Only) */}
+      <FloatingActionButton />
     </div>
   );
 }
