@@ -16,16 +16,22 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../../hooks/useAuth';
 
-export default function Sidebar({ isCollapsed, setIsCollapsed }) {
+export default function Sidebar({ isCollapsed, setIsCollapsed, stats }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { user, logout, hasPermission } = useAuth();
 
-  // Get role-based navigation items
+  // Get role-based navigation items with badge counts
   const getNavigationItems = () => {
     const baseItems = [
       { name: 'Dashboard', href: '/', icon: HomeIcon },
-      { name: 'Dogs', href: '/dogs', icon: HeartIcon },
+      { 
+        name: 'Dogs', 
+        href: '/dogs', 
+        icon: HeartIcon,
+        badge: stats?.injured > 0 ? stats.injured : null,
+        badgeColor: 'red'
+      },
       { name: 'Map View', href: '/map', icon: MapIcon }
     ];
 
@@ -208,6 +214,7 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                     <AnimatePresence mode="wait">
                       {!isCollapsed && (
                         <motion.span
+                          className="flex-1"
                           variants={contentVariants}
                           initial="collapsed"
                           animate="expanded"
@@ -219,6 +226,22 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                       )}
                     </AnimatePresence>
 
+                    {/* Notification Badge */}
+                    {item.badge && item.badge > 0 && (
+                      <motion.span
+                        className={`ml-auto px-2 py-0.5 text-xs font-semibold rounded-full ${
+                          item.badgeColor === 'red' 
+                            ? 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300' 
+                            : 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300'
+                        }`}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      >
+                        {item.badge}
+                      </motion.span>
+                    )}
+
                     {/* Tooltip for collapsed state */}
                     {isCollapsed && (
                       <motion.div
@@ -228,6 +251,11 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
                         exit={{ x: -10, opacity: 0 }}
                       >
                         {item.name}
+                        {item.badge && item.badge > 0 && (
+                          <span className="ml-2 px-1.5 py-0.5 text-xs font-semibold rounded-full bg-red-500 text-white">
+                            {item.badge}
+                          </span>
+                        )}
                         <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-1 w-2 h-2 bg-gray-900 rotate-45"></div>
                       </motion.div>
                     )}
@@ -237,6 +265,36 @@ export default function Sidebar({ isCollapsed, setIsCollapsed }) {
             })}
           </ul>
         </nav>
+
+        {/* Mini Stats */}
+        {stats && !isCollapsed && (
+          <motion.div
+            className="mt-auto mx-4 mb-4 p-3 bg-gradient-to-br from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 rounded-xl border border-primary-100 dark:border-primary-800/30"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.3 }}
+          >
+            <h4 className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2 uppercase tracking-wide">
+              Quick Stats
+            </h4>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-600 dark:text-gray-400">Total Dogs</span>
+                <span className="text-sm font-bold text-primary-700 dark:text-primary-300">{stats.total || 0}</span>
+              </div>
+              {stats.injured > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600 dark:text-gray-400">Need Attention</span>
+                  <span className="text-sm font-bold text-red-600 dark:text-red-400">{stats.injured}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-600 dark:text-gray-400">Vaccinated</span>
+                <span className="text-sm font-bold text-green-600 dark:text-green-400">{stats.vaccinated || 0}</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* User info */}
         <motion.div 

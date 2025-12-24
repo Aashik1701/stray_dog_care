@@ -206,7 +206,7 @@ export default function TopBar({ stats }) {
                 id="topbar-search"
                 name="topbarSearch"
                 type="text"
-                placeholder="Search dogs, locations, or IDs..."
+                placeholder="Search dogs, locations, or IDs... (⌘K)"
                 className={`block w-full pl-10 pr-3 py-3 border rounded-xl leading-5 bg-white dark:bg-gray-800 placeholder-gray-500 dark:placeholder-gray-400 dark:text-gray-100 font-body text-sm transition-all duration-200 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${
                   searchFocused 
                     ? 'border-primary-300 dark:border-primary-700 shadow-medium' 
@@ -214,6 +214,12 @@ export default function TopBar({ stats }) {
                 }`}
                 onFocus={() => setSearchFocused(true)}
                 onBlur={() => setSearchFocused(false)}
+                readOnly
+                onClick={(e) => {
+                  e.target.blur();
+                  // Dispatch custom event to open command palette
+                  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true }));
+                }}
                 aria-label="Search dogs, locations, or IDs"
               />
             </Motion.div>
