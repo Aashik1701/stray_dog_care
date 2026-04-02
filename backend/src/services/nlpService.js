@@ -126,11 +126,11 @@ class NLPService {
 
   async findDuplicates(text, candidates = [], threshold) {
     const url = `${NLP_SERVICE_URL}/api/nlp/find-duplicates`;
-    const params = {};
-    if (Array.isArray(candidates) && candidates.length) params.candidates = candidates;
-    if (typeof threshold === 'number') params.threshold = threshold;
+    const payload = { text };
+    if (Array.isArray(candidates) && candidates.length) payload.candidates = candidates;
+    if (typeof threshold === 'number') payload.threshold = threshold;
     const exec = async () => {
-      const { data } = await axios.post(url, { text }, { timeout: NLP_TIMEOUT, params });
+      const { data } = await axios.post(url, payload, { timeout: NLP_TIMEOUT });
       return data;
     };
     return this._requestWithRetry(exec, 'findDuplicates');

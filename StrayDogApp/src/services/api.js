@@ -284,6 +284,44 @@ api.interceptors.response.use(
         };
         return Promise.resolve({ data: { success: true, message: 'Dog registered (demo)', data: created } });
       }
+
+      // Mock report creation endpoint in demo mode
+      if (url.includes('/reports') && method === 'post') {
+        let payload = {};
+        try { payload = typeof data === 'string' ? JSON.parse(data) : (data || {}); } catch {}
+        const now = new Date();
+        const textValue = typeof payload.text === 'string' ? payload.text : 'Audio report submitted';
+        const urgent = /bleed|injur|critical|urgent|bite|attack/.test(String(textValue).toLowerCase());
+        const urgency = urgent ? 0.84 : 0.46;
+        const duplicateDetected = /same dog|duplicate|already reported/.test(String(textValue).toLowerCase());
+        const reportId = `demo-report-${now.getTime()}`;
+
+        return Promise.resolve({
+          data: {
+            success: true,
+            message: 'Report submitted (demo)',
+            data: {
+              _id: reportId,
+              raw_text: textValue,
+              translated_text: textValue,
+              urgency_score: urgency,
+              duplicate_of: duplicateDetected ? 'demo-existing-report' : null,
+              created_at: now.toISOString(),
+              updated_at: now.toISOString(),
+            },
+            meta: {
+              duplicate_detected: duplicateDetected,
+              duplicate_of: duplicateDetected ? 'demo-existing-report' : null,
+              urgency_score: urgency,
+              asr: {
+                model: 'demo-asr',
+                fallback: false,
+                reason: null,
+              },
+            },
+          },
+        });
+      }
     }
     
     return Promise.reject(error);

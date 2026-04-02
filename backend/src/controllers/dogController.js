@@ -488,13 +488,22 @@ module.exports.createDogWithNLP = async (req, res) => {
           .filter(Boolean)
           .slice(0, 20); // limit for transport size
 
-        const duplicateResult = await nlpService.findDuplicates(healthNotes, candidates, parseFloat(process.env.DOG_DUPLICATE_THRESHOLD || '0.82'));
-        if (duplicateResult?.is_potential_duplicate) {
-          return res.status(409).json({
-            success: false,
-            message: 'Potential duplicate detected',
-            data: { similar_reports: duplicateResult.similar_reports || [] }
-          });
+        if (candidates.length > 0) {
+          const duplicateResult = await nlpService.findDuplicates(
+            healthNotes,
+            candidates,
+            parseFloat(process.env.DOG_DUPLICATE_THRESHOLD || '0.82')
+          );
+          if (duplicateResult?.fallback) {
+            console.warn('NLP duplicate check fallback used:', duplicateResult?.reason || 'unknown_reason');
+          }
+          if (duplicateResult?.is_potential_duplicate) {
+            return res.status(409).json({
+              success: false,
+              message: 'Potential duplicate detected',
+              data: { similar_reports: duplicateResult.similar_reports || [] }
+            });
+          }
         }
       } catch (e) {
         // Non-fatal

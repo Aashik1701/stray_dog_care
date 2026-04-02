@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from typing import Optional, List, cast
 from functools import lru_cache
 import re
+import tempfile
 import numpy as np
 
 try:
@@ -45,6 +46,24 @@ _MODELS_WARMED = False
 DEFAULT_EMBED_MODEL = (
     "sentence-transformers/multi-qa-MiniLM-L6-cos-v1"
 )
+DEFAULT_TRANSLATION_MODEL = os.environ.get(
+    "NLP_TRANSLATION_MODEL", "facebook/nllb-200-distilled-600M"
+)
+NLP_TRANSLATION_ENABLED = (
+    os.environ.get("NLP_TRANSLATION_ENABLED", "true").lower() == "true"
+)
+NLLB_SOURCE_LANGS = {
+    "en": "eng_Latn",
+    "hi": "hin_Deva",
+    "ta": "tam_Taml",
+    "te": "tel_Telu",
+    "kn": "kan_Knda",
+    "ml": "mal_Mlym",
+}
+DEFAULT_ASR_MODEL = os.environ.get("NLP_ASR_MODEL", "openai/whisper-small")
+NLP_ASR_ENABLED = (
+    os.environ.get("NLP_ASR_ENABLED", "true").lower() == "true"
+)
 
 
 class AnalyzePayload(BaseModel):
@@ -59,6 +78,8 @@ class EmbedPayload(BaseModel):
 
 class DuplicatePayload(BaseModel):
     text: str
+    candidates: Optional[List[str]] = None
+    threshold: Optional[float] = None
 
 
 class PipelinePayload(BaseModel):
@@ -81,6 +102,12 @@ def health():
         "embed_model": os.environ.get(
             "NLP_EMBED_MODEL", DEFAULT_EMBED_MODEL
         ),
+        "translation_model": os.environ.get(
+            "NLP_TRANSLATION_MODEL", DEFAULT_TRANSLATION_MODEL
+        ),
+        "translation_enabled": NLP_TRANSLATION_ENABLED,
+        "asr_model": os.environ.get("NLP_ASR_MODEL", DEFAULT_ASR_MODEL),
+        "asr_enabled": NLP_ASR_ENABLED,
     }
 
 
@@ -170,9 +197,10 @@ def unified_pipeline(payload: PipelinePayload):
     if not text:
         raise HTTPException(status_code=400, detail="text is required")
 
-    # Simple language handling (stub: assume provided or 'en')
-    lang = payload.language or "en"
-    translated_text = text  # stub: integrate IndicTrans2 later
+    # Translate to English when source language is non-English.
+    # Falls back to source text if translation model/runtime is unavailable.
+    lang = normalize_language_code(payload.language)
+    translated_text, translation = translate_to_english(text, lang)
 
     # Pipelines
     sentiment_clf = get_sentiment_pipeline()
@@ -239,6 +267,7 @@ def unified_pipeline(payload: PipelinePayload):
     return {
         "language": lang,
         "translated_text": translated_text,
+        "translation": translation,
         "embedding": vec,
         "sentiment": {
             "label": sentiment_label,
@@ -259,73 +288,113 @@ def find_duplicates(
     candidates: Optional[List[str]] = None,
     threshold: Optional[float] = 0.82,
 ):
-    """Optional duplicate detector using IndicBERT embeddings when available.
-        - If `candidates` is provided, compute cosine similarity and
-            return matches >= threshold.
-    - If not provided or model unavailable, return the previous stub response.
+    """Duplicate detector with multi-strategy fallback.
+
+    Supports candidates/threshold from request body and query params.
+    Strategy order:
+      1) IndicBERT (if torch + model available)
+      2) Sentence-Transformers fallback
+      3) Explicit no-result fallback with reason metadata
     """
     text = (payload.text or "").strip()
-    if candidates and len(candidates) > 0 and HAS_TORCH:
+    if not text:
+        raise HTTPException(status_code=400, detail="text is required")
+
+    body_candidates = payload.candidates or []
+    query_candidates = candidates or []
+    merged = body_candidates if body_candidates else query_candidates
+    cand_texts = [str(c).strip() for c in merged if str(c).strip()]
+    thr = float(payload.threshold if payload.threshold is not None else (threshold or 0.82))
+
+    if not cand_texts:
+        return {
+            "is_potential_duplicate": False,
+            "similar_reports": [],
+            "threshold": thr,
+            "candidate_count": 0,
+            "strategy": "none",
+            "fallback": True,
+            "reason": "no_candidates",
+        }
+
+    errors: List[str] = []
+
+    if HAS_TORCH:
         try:
             model, tok, device_t = get_indicbert()
             q = _encode_embedding(text, model, tok, device_t)
             cand_vecs = [
-                _encode_embedding(c, model, tok, device_t) for c in candidates
+                _encode_embedding(c, model, tok, device_t) for c in cand_texts
             ]
-            # Cosine similarity
             sims = [float(F.cosine_similarity(q, v, dim=0)) for v in cand_vecs]
             paired = sorted(
-                zip(candidates, sims), key=lambda x: x[1], reverse=True
+                zip(cand_texts, sims), key=lambda x: x[1], reverse=True
             )
             similar = [
                 {"text": c, "similarity": s}
                 for (c, s) in paired
-                if s >= (threshold or 0.82)
+                if s >= thr
             ]
-            thr = float(threshold or 0.82)
             s0 = cast(float, similar[0]["similarity"]) if similar else 0.0
             is_dup = bool(similar and s0 >= thr)
             return {
                 "is_potential_duplicate": is_dup,
                 "similar_reports": similar,
+                "threshold": thr,
+                "candidate_count": len(cand_texts),
+                "strategy": "indicbert",
+                "fallback": False,
             }
         except Exception as e:
-            # Fall back to stub if anything goes wrong
-            print(f"[NLP] duplicates fallback due to error: {e}")
-            # Try Sentence-Transformers fallback if available
-            try:
-                st = get_st_embedder()
-                vecs = st.encode(
-                    [text] + candidates,
-                    normalize_embeddings=True,
-                    convert_to_numpy=True,
-                    show_progress_bar=False,
-                )
-                q = vecs[0]
-                cands = vecs[1:]
-                # cosine sim via dot product (normalized vectors)
-                sims = [float(np.dot(q, v)) for v in cands]
-                paired = sorted(
-                    zip(candidates, sims), key=lambda x: x[1], reverse=True
-                )
-                thr = float(threshold or 0.82)
-                similar = [
-                    {"text": c, "similarity": s}
-                    for (c, s) in paired
-                    if s >= thr
-                ]
-                s0 = cast(float, similar[0]["similarity"]) if similar else 0.0
-                is_dup = bool(similar and s0 >= thr)
-                return {
-                    "is_potential_duplicate": is_dup,
-                    "similar_reports": similar,
-                }
-            except Exception as se:
-                print(f"[NLP] ST fallback failed: {se}")
-    # Default stub behavior
+            err = f"indicbert_error: {e}"
+            errors.append(err)
+            print(f"[NLP] duplicates fallback due to error: {err}")
+
+    if HAS_ST:
+        try:
+            st = get_st_embedder()
+            vecs = st.encode(
+                [text] + cand_texts,
+                normalize_embeddings=True,
+                convert_to_numpy=True,
+                show_progress_bar=False,
+            )
+            q = vecs[0]
+            cands = vecs[1:]
+            sims = [float(np.dot(q, v)) for v in cands]
+            paired = sorted(
+                zip(cand_texts, sims), key=lambda x: x[1], reverse=True
+            )
+            similar = [
+                {"text": c, "similarity": s}
+                for (c, s) in paired
+                if s >= thr
+            ]
+            s0 = cast(float, similar[0]["similarity"]) if similar else 0.0
+            is_dup = bool(similar and s0 >= thr)
+            return {
+                "is_potential_duplicate": is_dup,
+                "similar_reports": similar,
+                "threshold": thr,
+                "candidate_count": len(cand_texts),
+                "strategy": "sentence-transformers",
+                "fallback": bool(errors),
+                "reason": " ; ".join(errors) if errors else None,
+            }
+        except Exception as e:
+            err = f"st_error: {e}"
+            errors.append(err)
+            print(f"[NLP] ST fallback failed: {err}")
+
+    reason = " ; ".join(errors) if errors else "no_model_available"
     return {
         "is_potential_duplicate": False,
         "similar_reports": [],
+        "threshold": thr,
+        "candidate_count": len(cand_texts),
+        "strategy": "none",
+        "fallback": True,
+        "reason": reason,
     }
 
  
@@ -334,13 +403,75 @@ async def speech_to_text(
     audio: UploadFile = File(...),
     language: Optional[str] = Form(None),
 ):
-    # Stub transcription: echo filename
-    name = audio.filename or "audio"
-    return {
-        "text": f"Transcribed text from {name} (stub)",
-        "language": language or "en",
-        "confidence": 0.8,
-    }
+    preferred_lang = normalize_language_code(language)
+    model_name = os.environ.get("NLP_ASR_MODEL", DEFAULT_ASR_MODEL)
+
+    data = await audio.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="audio file is empty")
+
+    if not NLP_ASR_ENABLED:
+        name = audio.filename or "audio"
+        return {
+            "text": f"Transcribed text from {name} (fallback)",
+            "language": preferred_lang,
+            "confidence": 0.0,
+            "model": model_name,
+            "fallback": True,
+            "reason": "asr_disabled",
+        }
+
+    suffix = ".wav"
+    if audio.filename and "." in audio.filename:
+        ext = audio.filename.rsplit(".", 1)[-1].lower()
+        if ext and len(ext) <= 8:
+            suffix = f".{ext}"
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+            tmp.write(data)
+            tmp_path = tmp.name
+
+        asr = get_asr_pipeline()
+        result = asr(tmp_path)
+
+        text = ""
+        confidence = 0.0
+        if isinstance(result, dict):
+            text = str(result.get("text", "")).strip()
+            if result.get("score") is not None:
+                confidence = float(result.get("score") or 0.0)
+        elif isinstance(result, str):
+            text = result.strip()
+
+        if not text:
+            raise RuntimeError("ASR returned empty text")
+
+        return {
+            "text": text,
+            "language": preferred_lang,
+            "confidence": confidence,
+            "model": model_name,
+            "fallback": False,
+        }
+    except Exception as e:
+        print(f"[NLP] ASR fallback due to error: {e}")
+        name = audio.filename or "audio"
+        return {
+            "text": f"Transcribed text from {name} (fallback)",
+            "language": preferred_lang,
+            "confidence": 0.0,
+            "model": model_name,
+            "fallback": True,
+            "reason": "asr_error",
+        }
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
 
 
 @lru_cache(maxsize=1)
@@ -384,6 +515,90 @@ def get_ner_pipeline():
         aggregation_strategy="simple",
         device=DEVICE,
     )
+
+
+@lru_cache(maxsize=1)
+def get_asr_pipeline():
+    from transformers import pipeline
+    model_name = os.environ.get("NLP_ASR_MODEL", DEFAULT_ASR_MODEL)
+    return pipeline(
+        "automatic-speech-recognition",
+        model=model_name,
+        device=DEVICE,
+    )
+
+
+def normalize_language_code(language: Optional[str]) -> str:
+    if not language:
+        return "en"
+    lang = str(language).strip().lower()
+    if not lang:
+        return "en"
+    lang = lang.replace("_", "-")
+    if "-" in lang:
+        lang = lang.split("-")[0]
+    return lang or "en"
+
+
+@lru_cache(maxsize=1)
+def get_translation_pipeline():
+    from transformers import pipeline
+    model_name = os.environ.get(
+        "NLP_TRANSLATION_MODEL", DEFAULT_TRANSLATION_MODEL
+    )
+    return pipeline("translation", model=model_name, device=DEVICE)
+
+
+def translate_to_english(text: str, language: Optional[str]):
+    lang = normalize_language_code(language)
+    model_name = os.environ.get(
+        "NLP_TRANSLATION_MODEL", DEFAULT_TRANSLATION_MODEL
+    )
+    meta = {
+        "source_language": lang,
+        "target_language": "en",
+        "model": model_name,
+        "applied": False,
+        "fallback": False,
+    }
+
+    if lang in ("en", "eng"):
+        return text, meta
+
+    if not NLP_TRANSLATION_ENABLED:
+        meta["fallback"] = True
+        meta["reason"] = "translation_disabled"
+        return text, meta
+
+    src_lang = NLLB_SOURCE_LANGS.get(lang)
+    if not src_lang:
+        meta["fallback"] = True
+        meta["reason"] = "unsupported_language_code"
+        return text, meta
+
+    try:
+        translator = get_translation_pipeline()
+        out = translator(
+            text,
+            src_lang=src_lang,
+            tgt_lang="eng_Latn",
+            max_length=512,
+            truncation=True,
+        )
+        if isinstance(out, list) and out:
+            translated = str(out[0].get("translation_text", "")).strip()
+            if translated:
+                meta["applied"] = True
+                return translated, meta
+
+        meta["fallback"] = True
+        meta["reason"] = "empty_translation_output"
+        return text, meta
+    except Exception as e:
+        print(f"[NLP] translation fallback due to error: {e}")
+        meta["fallback"] = True
+        meta["reason"] = "translation_error"
+        return text, meta
 
 
 SYMPTOM_KEYWORDS = [

@@ -1,5 +1,10 @@
 const Report = require('../models/Report');
 const nlpService = require('../services/nlpService');
+const {
+  buildNlFilter,
+  extractDateRange,
+  parseIsoDate,
+} = require('../utils/nlQueryParser');
 
 // GET /api/search/semantic?q=...
 exports.semanticSearch = async (req, res) => {
@@ -54,62 +59,27 @@ exports.semanticSearch = async (req, res) => {
 // GET /api/search/nl?q=injured dogs in zone 7 last week
 exports.nlSearch = async (req, res) => {
   try {
-    const q = typeof req.query.q === 'string' ? req.query.q.toLowerCase() : '';
-    if (!q) return res.status(400).json({ success: false, message: 'Query q is required' });
+    const rawQuery = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    if (!rawQuery) return res.status(400).json({ success: false, message: 'Query q is required' });
 
-    const filter = {};
-
-    // zone extraction
-    const zoneMatch = q.match(/zone\s+(\d+|[a-z]+)/i);
-    if (zoneMatch) {
-      const zone = zoneMatch[1];
-      filter['location_hint.zone'] = zone;
-    }
-
-    // time range extraction (last week|month|day)
-    const now = new Date();
-    if (/last\s+week/.test(q)) {
-      const from = new Date(now);
-      from.setDate(from.getDate() - 7);
-      filter.created_at = { $gte: from };
-    } else if (/last\s+month/.test(q)) {
-      const from = new Date(now);
-      from.setMonth(from.getMonth() - 1);
-      filter.created_at = { $gte: from };
-    } else if (/last\s+day|yesterday/.test(q)) {
-      const from = new Date(now);
-      from.setDate(from.getDate() - 1);
-      filter.created_at = { $gte: from };
-    }
-
-    // intent: injured/bite/adoption -> classification includes
-    const intents = [];
-    if (/injur|bleed|wound|limp/.test(q)) intents.push('injury case');
-    if (/bite/.test(q)) intents.push('bite incident');
-    if (/adopt/.test(q)) intents.push('adoption request');
-    if (intents.length) {
-      filter['classification.label'] = { $in: intents };
-    }
-
-    // urgency keyword
-    if (/urgent|critical|emergency/.test(q)) {
-      filter.urgency_score = { $gte: 0.75 };
-    }
+    const { filter, appliedRules, limitOverride, sort } = buildNlFilter(rawQuery);
 
     const page = Math.max(parseInt(req.query.page || '1', 10), 1);
-    const limit = Math.min(Math.max(parseInt(req.query.limit || '20', 10), 1), 100);
+    const requestedLimit = req.query.limit ? parseInt(req.query.limit, 10) : (limitOverride || 20);
+    const limit = Math.min(Math.max(requestedLimit || 20, 1), 100);
     const skip = (page - 1) * limit;
 
     const [items, total] = await Promise.all([
-      Report.find(filter).sort({ created_at: -1 }).skip(skip).limit(limit).lean(),
+      Report.find(filter).sort(sort).skip(skip).limit(limit).lean(),
       Report.countDocuments(filter),
     ]);
 
     return res.json({
       success: true,
       data: {
-        query: q,
+        query: rawQuery,
         filter,
+        appliedRules,
         items,
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
       },
@@ -118,4 +88,10 @@ exports.nlSearch = async (req, res) => {
     console.error('[search] nl error:', e);
     return res.status(500).json({ success: false, message: 'NL search failed' });
   }
+};
+
+exports.__private__ = {
+  buildNlFilter,
+  extractDateRange,
+  parseIsoDate,
 };

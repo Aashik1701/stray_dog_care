@@ -1,11 +1,13 @@
-# NLP Service (FastAPI) — Starter
+# NLP Service (FastAPI)
 
-This is a minimal FastAPI service to support the Stray Dog Management System's NLP endpoints. It returns stubbed responses so you can wire the backend and mobile app before plugging real models.
+This service powers NLP endpoints for the Stray Dog Management System. Core analysis features are implemented (classification, sentiment, summarization, entities, embeddings, and duplicate checks). Translation and speech-to-text now use model-backed paths with graceful fallback behavior.
 
 ## Endpoints
 - POST `/api/nlp/analyze-report` — returns category, sentiment, urgency, summary, and basic entities
-- POST `/api/nlp/find-duplicates` — returns potential duplicates (stubbed false)
-- POST `/api/nlp/speech-to-text` — accepts `multipart/form-data` and returns a dummy transcription
+- POST `/api/nlp/pipeline` — unified payload with translation field, embedding, sentiment, urgency, classification, entities, and summary
+- POST `/api/nlp/embed` — returns sentence embedding vector
+- POST `/api/nlp/find-duplicates` — candidate-based similarity check (falls back to `false` when unavailable)
+- POST `/api/nlp/speech-to-text` — accepts `multipart/form-data`, attempts model-backed transcription, and falls back safely on failure
 
 ## Run locally
 ```bash
@@ -34,7 +36,9 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 - LibreSSL warning on macOS system Python: `urllib3 v2 only supports OpenSSL 1.1.1+, current ssl is LibreSSL …` — it's a warning, but if HTTPS downloads fail (e.g., model weights), use a Python from python.org/Homebrew/pyenv (3.10+) which links to OpenSSL 1.1.1+.
 
 ## Next steps
-- Swap stub logic with real models (Hugging Face transformers, spaCy, Whisper)
+- Run translation quality validation for `/api/nlp/pipeline` and tune/swap model if required (e.g., IndicTrans2)
+- Run ASR quality validation for `/api/nlp/speech-to-text` on field audio
+- Harden duplicate-detection fallback paths and add benchmark coverage
 - Add Redis cache/queue for heavy tasks
 - Add auth and rate limits if exposing publicly
 
