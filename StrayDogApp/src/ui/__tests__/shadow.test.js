@@ -1,25 +1,44 @@
-/**
- * Test file to verify shadow utility works correctly across platforms
- * Run this in React Native debugger or add console.log statements
- */
+function loadShadowForPlatform(os) {
+	jest.resetModules();
+	jest.doMock('react-native', () => ({
+		Platform: {
+			OS: os,
+			select: (map) => map[os] || map.default,
+		},
+	}));
+	return require('../shadow');
+}
 
-import { shadow, modernShadow } from '../ui/shadow';
+describe('shadow utility', () => {
+	test('uses boxShadow on web', () => {
+		const { shadow } = loadShadowForPlatform('web');
+		const style = shadow(2);
+		expect(style.boxShadow).toContain('0px 2px 4px');
+	});
 
-// Test the current shadow utility
-console.log('Shadow Level 1:', shadow(1));
-console.log('Shadow Level 2:', shadow(2));
-console.log('Shadow Level 3:', shadow(3));
-console.log('Shadow Level 4:', shadow(4));
+	test('uses iOS legacy shadow props on ios', () => {
+		const { shadow } = loadShadowForPlatform('ios');
+		const style = shadow(3, { color: '#111111', opacity: 0.22 });
+		expect(style).toEqual({
+			shadowColor: '#111111',
+			shadowOffset: { width: 0, height: 4 },
+			shadowOpacity: 0.22,
+			shadowRadius: 8,
+		});
+	});
 
-// Test with custom options
-console.log('Shadow with custom color:', shadow(2, { color: '#FF0000', opacity: 0.5 }));
+	test('uses elevation on android', () => {
+		const { shadow } = loadShadowForPlatform('android');
+		const style = shadow(4);
+		expect(style.elevation).toBe(8);
+		expect(style.shadowColor).toBe('#000');
+	});
 
-// Test the modern shadow utility (for future RN 0.76+ migration)
-console.log('Modern Shadow Level 2:', modernShadow(2));
-
-// Expected outputs:
-// Web: Should use boxShadow property
-// iOS: Should use shadowColor, shadowOffset, shadowOpacity, shadowRadius
-// Android: Should use elevation and shadowColor
-
-export { shadow, modernShadow };
+	test('modernShadow returns boxShadow style', () => {
+		const { modernShadow } = loadShadowForPlatform('android');
+		const style = modernShadow(1);
+		expect(style).toEqual({
+			boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.10)',
+		});
+	});
+});

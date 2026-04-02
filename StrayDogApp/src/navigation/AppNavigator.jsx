@@ -13,6 +13,7 @@ import ResetPasswordScreen from '../screens/ResetPasswordScreen';
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
 import AddDogScreen from '../screens/AddDogScreen';
+import ReportIncidentScreen from '../screens/ReportIncidentScreen';
 import DogsScreen from '../screens/DogsScreen';
 import DogDetailScreen from '../screens/DogDetailScreen';
 import SplashScreen from '../screens/SplashScreen';
@@ -35,6 +36,8 @@ function TabNavigator() {
             iconName = focused ? 'list' : 'list-outline';
           } else if (route.name === 'Map') {
             iconName = focused ? 'map' : 'map-outline';
+          } else if (route.name === 'Report') {
+            iconName = focused ? 'warning' : 'warning-outline';
           } else if (route.name === 'AddDog') {
             iconName = focused ? 'add-circle' : 'add-circle-outline';
           }
@@ -48,6 +51,11 @@ function TabNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Dogs" component={DogsScreen} />
       <Tab.Screen name="Map" component={MapScreen} />
+      <Tab.Screen
+        name="Report"
+        component={ReportIncidentScreen}
+        options={{ tabBarLabel: 'Report' }}
+      />
       <Tab.Screen 
         name="AddDog" 
         component={AddDogScreen} 
