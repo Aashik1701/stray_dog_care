@@ -1,4 +1,4 @@
-# Stray Dog Care Management System
+# PawTrack - Stray Management System
 
 > AI-powered platform for systematic animal welfare and public health management
 
